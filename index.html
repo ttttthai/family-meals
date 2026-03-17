@@ -1,0 +1,2013 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Bữa Cơm Gia Đình — Family Meals</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+<style>
+:root {
+  --primary: #E8521A;
+  --primary-light: #FF7A45;
+  --secondary: #2D5016;
+  --secondary-light: #4A7A2E;
+  --bg: #FFF9F4;
+  --card: #FFFFFF;
+  --text: #1A1A1A;
+  --muted: #8B7355;
+  --border: #F0E6D9;
+  --shadow: 0 4px 20px rgba(232,82,26,0.08);
+  --shadow-lg: 0 8px 40px rgba(232,82,26,0.12);
+  --radius: 16px;
+  --radius-lg: 24px;
+  --font-ui: 'Nunito', sans-serif;
+  --font-display: 'Playfair Display', serif;
+  --nav-height: 72px;
+  --amber: #F59E0B;
+  --green: #22C55E;
+  --red: #EF4444;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1A1208;
+    --card: #2A1F10;
+    --text: #F5ECD7;
+    --muted: #A89478;
+    --border: #3D2E1A;
+    --shadow: 0 4px 20px rgba(0,0,0,0.3);
+    --shadow-lg: 0 8px 40px rgba(0,0,0,0.4);
+  }
+}
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html, body {
+  font-family: var(--font-ui); background: var(--bg); color: var(--text);
+  min-height:100vh; overflow-x:hidden;
+}
+body { padding-bottom: calc(var(--nav-height) + 16px); }
+
+/* ═══ BOTTOM NAV ═══ */
+.bottom-nav {
+  position:fixed; bottom:0; left:0; right:0; z-index:1000;
+  background: var(--card); border-top:1px solid var(--border);
+  display:flex; height:var(--nav-height);
+  box-shadow: 0 -2px 20px rgba(0,0,0,0.06);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.nav-item {
+  flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:2px; cursor:pointer; transition:all .2s; border:none; background:none;
+  color:var(--muted); font-family:var(--font-ui); font-size:10px;
+}
+.nav-item.active { color:var(--primary); }
+.nav-item .nav-icon { font-size:22px; }
+.nav-item .nav-label { font-weight:600; }
+.nav-item .nav-sub { font-size:8px; opacity:.7; }
+
+/* ═══ HEADER ═══ */
+.app-header {
+  background: linear-gradient(135deg, var(--primary), #D4451A);
+  color:#fff; padding:16px 16px 12px; position:sticky; top:0; z-index:100;
+  display:flex; align-items:center; gap:12px;
+}
+.app-title { font-family:var(--font-display); font-size:20px; font-weight:700; }
+.app-subtitle { font-size:11px; opacity:.85; }
+
+/* ═══ MEMBER SELECTOR ═══ */
+.member-selector {
+  display:flex; gap:8px; padding:12px 16px; background:var(--card);
+  border-bottom:1px solid var(--border); overflow-x:auto;
+  position:sticky; top:60px; z-index:99;
+}
+.member-selector::-webkit-scrollbar { display:none; }
+.member-box {
+  display:flex; align-items:center; gap:6px; padding:8px 14px;
+  border-radius:12px; border:2px solid var(--border); background:var(--bg);
+  cursor:pointer; transition:all .2s; white-space:nowrap; min-height:44px;
+  user-select:none;
+}
+.member-box.active {
+  border-color:var(--primary); background:rgba(232,82,26,0.08);
+}
+.member-box .mb-icon { font-size:20px; }
+.member-box .mb-name { font-size:12px; font-weight:700; color:var(--text); }
+.member-box .mb-sub { font-size:10px; color:var(--muted); }
+.member-box .mb-check {
+  width:18px; height:18px; border-radius:4px; border:2px solid var(--border);
+  display:flex; align-items:center; justify-content:center; font-size:12px;
+  transition:all .2s;
+}
+.member-box.active .mb-check {
+  background:var(--primary); border-color:var(--primary); color:#fff;
+}
+.member-count {
+  font-size:11px; color:var(--muted); padding:0 16px 8px;
+  background:var(--card); border-bottom:1px solid var(--border);
+}
+
+/* ═══ VIEWS ═══ */
+.view { display:none; padding:16px; animation: fadeIn .3s ease; }
+.view.active { display:block; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+@keyframes slideUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+@keyframes scaleBounce { 0%{transform:scale(1)} 50%{transform:scale(1.3)} 100%{transform:scale(1)} }
+
+/* ═══ WEEK GRID ═══ */
+.week-scroll {
+  display:flex; gap:12px; overflow-x:auto; padding:4px 0 16px;
+  scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch;
+}
+.week-scroll::-webkit-scrollbar { display:none; }
+.day-card {
+  min-width:170px; flex-shrink:0; background:var(--card); border-radius:var(--radius);
+  overflow:hidden; box-shadow:var(--shadow); scroll-snap-align:start;
+  border:2px solid transparent; transition:all .3s; cursor:pointer;
+}
+.day-card.today { border-color:var(--primary); }
+.day-card-header {
+  position:relative; height:80px; background:linear-gradient(135deg,var(--primary),var(--primary-light));
+  display:flex; align-items:center; justify-content:center; overflow:hidden;
+}
+.day-card-header img {
+  position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:.35;
+}
+.day-card-header .day-overlay {
+  position:relative; z-index:1; text-align:center; color:#fff;
+}
+.day-card-header .day-overlay .day-name { font-weight:800; font-size:15px; }
+.day-card-header .day-overlay .day-name-en { font-size:10px; opacity:.85; }
+.day-card-header .day-overlay .day-date {
+  font-size:22px; font-weight:800; font-family:var(--font-display);
+}
+.day-card-body { padding:10px; }
+.day-card .day-icons { display:flex; gap:4px; flex-wrap:wrap; margin-bottom:6px; font-size:13px; }
+.meal-slot {
+  display:flex; align-items:center; gap:6px; padding:6px 8px; margin:3px 0;
+  background:var(--bg); border-radius:10px; font-size:12px; font-weight:600;
+  cursor:pointer; transition:all .2s; min-height:44px;
+}
+.meal-slot:hover { background:var(--border); transform:scale(1.02); }
+.meal-slot.locked { border:2px solid var(--green); background:rgba(34,197,94,.06); }
+.meal-slot .slot-icon { font-size:16px; }
+.meal-slot .slot-info { flex:1; }
+.meal-slot .slot-name { font-size:10px; color:var(--muted); }
+.meal-slot .slot-dish { font-size:11px; font-weight:700; color:var(--secondary); }
+.meal-slot .slot-thumb { width:36px; height:36px; border-radius:8px; object-fit:cover; }
+.portion-badge {
+  background:var(--amber); color:#fff; font-size:9px; font-weight:700;
+  padding:2px 6px; border-radius:8px; white-space:nowrap;
+}
+
+/* ═══ TOGGLES ═══ */
+.toggle-row {
+  display:flex; align-items:center; gap:10px; padding:10px 14px;
+  background:var(--card); border-radius:12px; margin:6px 0; box-shadow:var(--shadow);
+}
+.toggle-row label { flex:1; font-size:13px; font-weight:600; }
+.toggle-switch {
+  width:44px; height:26px; background:var(--border); border-radius:13px;
+  position:relative; cursor:pointer; transition:background .3s; border:none;
+}
+.toggle-switch.on { background:var(--primary); }
+.toggle-switch::after {
+  content:''; position:absolute; top:3px; left:3px; width:20px; height:20px;
+  background:#fff; border-radius:50%; transition:transform .3s;
+}
+.toggle-switch.on::after { transform:translateX(18px); }
+
+/* ═══ FOOD CARDS ═══ */
+.food-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+@media(min-width:600px){ .food-grid { grid-template-columns:1fr 1fr 1fr; } }
+.food-card {
+  background:var(--card); border-radius:var(--radius); overflow:hidden;
+  box-shadow:var(--shadow); transition:all .3s; cursor:pointer;
+  animation:slideUp .4s ease backwards; position:relative;
+}
+.food-card:hover { transform:translateY(-4px); box-shadow:var(--shadow-lg); }
+.food-card.greyed { opacity:.5; filter:grayscale(.5); }
+.food-card.repeat-warn { border:2px solid var(--amber); }
+.food-card-img-wrap {
+  position:relative; overflow:hidden;
+}
+.food-card-img {
+  width:100%; height:150px; object-fit:cover; background:#E8DDD0;
+  transition:transform .4s;
+}
+.food-card:hover .food-card-img { transform:scale(1.05); }
+.food-card-overlay {
+  position:absolute; bottom:0; left:0; right:0;
+  background:linear-gradient(transparent, rgba(0,0,0,.7));
+  padding:24px 10px 8px; color:#fff;
+}
+.food-card-overlay .cuisine-tag { margin:0 0 4px; }
+.food-card-overlay .compat-overall {
+  position:absolute; top:8px; right:8px;
+}
+.food-card-body { padding:10px; }
+.food-card-name { font-family:var(--font-display); font-size:14px; font-weight:700; line-height:1.2; }
+.food-card-name-en { font-size:11px; color:var(--muted); margin-top:2px; }
+.cuisine-tag {
+  display:inline-block; padding:3px 10px; border-radius:20px; font-size:10px;
+  font-weight:700; margin:6px 4px 6px 0;
+}
+.cuisine-filter {
+  display:flex; gap:8px; overflow-x:auto; padding:4px 0;
+  -webkit-overflow-scrolling:touch; scrollbar-width:none;
+}
+.cuisine-filter::-webkit-scrollbar { display:none; }
+.filter-row {
+  display:flex; align-items:center; gap:8px; margin-bottom:4px;
+}
+.filter-label {
+  font-size:11px; font-weight:700; color:var(--muted); white-space:nowrap; min-width:70px;
+}
+.cuisine-pill {
+  flex-shrink:0; padding:6px 14px; border-radius:24px; font-size:12px;
+  font-weight:600; border:2px solid var(--border); background:var(--card);
+  cursor:pointer; transition:all .2s; white-space:nowrap;
+}
+.cuisine-pill.active {
+  background:var(--primary); color:#fff; border-color:var(--primary);
+  box-shadow:0 2px 8px rgba(232,82,26,.3);
+}
+.cuisine-pill.type-pill.active {
+  background:var(--secondary); border-color:var(--secondary);
+  box-shadow:0 2px 8px rgba(45,80,22,.3);
+}
+.cuisine-pill:not(.active):hover { border-color:var(--primary); color:var(--primary); }
+.group-grid {
+  display:grid; grid-template-columns:1fr 1fr; gap:12px;
+}
+@media(min-width:600px) { .group-grid { grid-template-columns:1fr 1fr 1fr; } }
+.group-card {
+  background:var(--card); border-radius:16px; overflow:hidden;
+  box-shadow:var(--shadow); cursor:pointer; transition:transform .2s, box-shadow .2s;
+  animation:fadeIn .3s ease;
+}
+.group-card:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(0,0,0,.12); }
+.group-card:active { transform:scale(.97); }
+.group-card-img { position:relative; height:120px; overflow:hidden; }
+.group-card-img img { width:100%; height:100%; object-fit:cover; }
+.group-card-overlay {
+  position:absolute; bottom:0; left:0; right:0; padding:6px 10px;
+  display:flex; justify-content:space-between; align-items:center;
+  background:linear-gradient(transparent, rgba(0,0,0,.6));
+}
+.group-card-count { color:#fff; font-size:12px; font-weight:700; }
+.group-card-body { padding:10px; }
+.group-card-name { font-family:var(--font-display); font-size:14px; font-weight:700; }
+.group-card-preview { font-size:11px; color:var(--muted); margin-top:4px; line-height:1.3;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.group-header {
+  display:flex; align-items:center; gap:12px; padding:8px 0 12px; cursor:pointer;
+}
+.group-back { font-size:14px; color:var(--primary); font-weight:600; }
+.group-title { font-family:var(--font-display); font-size:18px; font-weight:700; }
+.compat-bar { display:flex; gap:6px; margin:8px 0; align-items:center; }
+.compat-member { display:flex; flex-direction:column; align-items:center; font-size:10px; gap:2px; }
+.compat-member .member-icon { font-size:18px; }
+.compat-overall {
+  font-size:13px; font-weight:700; padding:3px 10px; border-radius:10px;
+}
+.compat-high { background:#DCFCE7; color:#166534; }
+.compat-med { background:#FEF9C3; color:#854D0E; }
+.compat-low { background:#FEE2E2; color:#991B1B; }
+@media(prefers-color-scheme:dark){
+  .compat-high{background:#14532D;color:#86EFAC;}
+  .compat-med{background:#713F12;color:#FDE68A;}
+  .compat-low{background:#7F1D1D;color:#FCA5A5;}
+}
+.food-chips { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+.chip {
+  padding:3px 8px; border-radius:8px; font-size:10px; font-weight:600;
+  background:var(--bg); color:var(--muted);
+}
+.conflict-badge {
+  display:block; font-size:11px; color:var(--red); font-weight:600;
+  margin-top:6px; padding:4px 8px; background:#FEF2F2; border-radius:8px;
+}
+@media(prefers-color-scheme:dark){.conflict-badge{background:#450A0A;color:#FCA5A5;}}
+.repeat-badge {
+  display:inline-block; font-size:11px; color:var(--amber); font-weight:600;
+  margin-top:4px;
+}
+.happy-badge { font-size:12px; font-weight:700; color:var(--secondary); margin-top:6px; }
+
+/* ═══ MODAL ═══ */
+.modal-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:2000;
+  display:none; align-items:flex-end; justify-content:center;
+  backdrop-filter:blur(4px);
+}
+.modal-overlay.open { display:flex; }
+.modal-sheet {
+  background:var(--card); border-radius:var(--radius-lg) var(--radius-lg) 0 0;
+  width:100%; max-width:500px; max-height:85vh; overflow-y:auto;
+  animation:slideUp .3s ease; padding:0 0 env(safe-area-inset-bottom);
+}
+.modal-handle {
+  width:40px; height:4px; background:var(--border); border-radius:2px;
+  margin:10px auto;
+}
+.modal-header { padding:0 16px 12px; }
+.modal-header h2 { font-family:var(--font-display); font-size:20px; }
+.modal-header p { font-size:13px; color:var(--muted); }
+.modal-body { padding:0 16px 24px; }
+.modal-close {
+  position:absolute; top:16px; right:16px; width:36px; height:36px;
+  border-radius:50%; border:none; background:var(--bg); font-size:18px;
+  cursor:pointer; display:flex; align-items:center; justify-content:center;
+}
+.modal-img { width:100%; height:200px; object-fit:cover; }
+.detail-section { margin:16px 0; }
+.detail-section h3 { font-size:14px; font-weight:700; margin-bottom:8px; }
+.detail-section p { font-size:13px; line-height:1.6; color:var(--muted); }
+.ingredient-list { display:flex; flex-wrap:wrap; gap:6px; }
+.ingredient-item {
+  padding:4px 10px; background:var(--bg); border-radius:8px;
+  font-size:12px; color:var(--text);
+}
+.member-breakdown {
+  display:grid; gap:8px;
+}
+.member-row {
+  display:flex; align-items:center; gap:10px; padding:8px 10px;
+  background:var(--bg); border-radius:10px;
+}
+.member-row .m-icon { font-size:24px; }
+.member-row .m-info { flex:1; }
+.member-row .m-name { font-weight:700; font-size:13px; }
+.member-row .m-reason { font-size:11px; color:var(--muted); }
+.member-row .m-vote { font-size:20px; }
+
+/* ═══ VOTING ═══ */
+.voting-panel {
+  background:var(--card); border-radius:var(--radius); padding:14px;
+  box-shadow:var(--shadow); margin-bottom:16px;
+}
+.voting-title { font-weight:700; font-size:15px; margin-bottom:10px; }
+.voter-avatars { display:flex; gap:12px; margin-bottom:12px; justify-content:center; }
+.voter-avatar {
+  width:52px; height:52px; border-radius:50%; display:flex; align-items:center;
+  justify-content:center; font-size:26px; background:var(--bg); border:3px solid var(--border);
+  cursor:pointer; transition:all .2s; position:relative;
+}
+.voter-avatar.active { border-color:var(--primary); box-shadow:0 0 0 3px rgba(232,82,26,.2); }
+.voter-avatar .vote-indicator {
+  position:absolute; bottom:-4px; right:-4px; font-size:14px;
+  background:var(--card); border-radius:50%; width:22px; height:22px;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 1px 4px rgba(0,0,0,.15);
+}
+.vote-btns { display:flex; gap:8px; justify-content:center; margin:10px 0; }
+.vote-btn {
+  min-width:44px; min-height:44px; border-radius:12px; border:2px solid var(--border);
+  background:var(--card); font-size:20px; cursor:pointer; transition:all .2s;
+  display:flex; align-items:center; justify-content:center; padding:8px 14px;
+}
+.vote-btn:hover { border-color:var(--primary); }
+.vote-btn.selected { border-color:var(--primary); background:rgba(232,82,26,.08); transform:scale(1.1); }
+.consensus-bar {
+  height:8px; background:var(--border); border-radius:4px; overflow:hidden; margin:10px 0;
+}
+.consensus-fill {
+  height:100%; background:linear-gradient(90deg,var(--primary),var(--green));
+  border-radius:4px; transition:width .5s ease;
+}
+.consensus-text { font-size:12px; color:var(--muted); text-align:center; }
+.lock-btn {
+  width:100%; padding:14px; border:none; border-radius:12px;
+  background:var(--primary); color:#fff; font-family:var(--font-ui);
+  font-size:15px; font-weight:700; cursor:pointer; margin-top:10px;
+  min-height:48px; transition:all .2s;
+}
+.lock-btn:disabled { opacity:.4; cursor:not-allowed; }
+.lock-btn:not(:disabled):hover { background:var(--primary-light); }
+
+/* ═══ SEARCH ═══ */
+.search-bar {
+  display:flex; align-items:center; gap:8px; background:var(--card);
+  border-radius:14px; padding:10px 14px; box-shadow:var(--shadow); margin-bottom:12px;
+}
+.search-bar input {
+  flex:1; border:none; background:transparent; font-family:var(--font-ui);
+  font-size:14px; color:var(--text); outline:none;
+}
+.search-bar input::placeholder { color:var(--muted); }
+.filter-scroll { display:flex; gap:8px; overflow-x:auto; padding:4px 0 12px; }
+.filter-scroll::-webkit-scrollbar { display:none; }
+.filter-chip {
+  white-space:nowrap; padding:8px 14px; border-radius:20px; font-size:12px;
+  font-weight:600; background:var(--card); border:1px solid var(--border);
+  cursor:pointer; transition:all .2s; min-height:36px;
+}
+.filter-chip.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+.restaurant-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+@media(max-width:400px){ .restaurant-grid { grid-template-columns:1fr; } }
+.rest-card {
+  background:var(--card); border-radius:var(--radius); overflow:hidden;
+  box-shadow:var(--shadow); cursor:pointer; transition:all .3s;
+  animation:slideUp .4s ease backwards; position:relative;
+}
+.rest-card:hover { transform:translateY(-3px); box-shadow:var(--shadow-lg); }
+.rest-card-img-wrap { position:relative; overflow:hidden; }
+.rest-card-img { width:100%; height:140px; object-fit:cover; background:#E8DDD0; transition:transform .4s; }
+.rest-card:hover .rest-card-img { transform:scale(1.05); }
+.rest-card-rating-badge {
+  position:absolute; top:8px; left:8px; background:rgba(0,0,0,.7); color:#fff;
+  padding:3px 8px; border-radius:8px; font-size:11px; font-weight:700;
+  backdrop-filter:blur(4px);
+}
+.rest-card-body { padding:10px; }
+.rest-card-name { font-weight:700; font-size:13px; }
+.rest-card-meta { font-size:11px; color:var(--muted); margin-top:2px; }
+.rest-card-rating { color:var(--amber); font-weight:700; }
+
+/* ═══ HISTORY ═══ */
+.history-week { margin-bottom:20px; }
+.history-week h3 { font-size:14px; font-weight:700; color:var(--primary); margin-bottom:8px; }
+.history-item {
+  display:flex; align-items:center; gap:10px; padding:10px;
+  background:var(--card); border-radius:12px; margin-bottom:8px; box-shadow:var(--shadow);
+}
+.history-item img { width:64px; height:64px; border-radius:12px; object-fit:cover; }
+.history-info { flex:1; }
+.history-info .h-dish { font-weight:700; font-size:13px; }
+.history-info .h-meta { font-size:11px; color:var(--muted); }
+
+/* ═══ CUISINE COLORS ═══ */
+.cuisine-vietnamese { background:#E8F5E9; color:#2D5016; }
+.cuisine-japanese { background:#FFF3E0; color:#E65100; }
+.cuisine-korean { background:#FCE4EC; color:#880E4F; }
+.cuisine-italian { background:#E3F2FD; color:#1565C0; }
+.cuisine-french { background:#F3E5F5; color:#6A1B9A; }
+.cuisine-indian { background:#FFF8E1; color:#F57F17; }
+.cuisine-mexican { background:#EFEBE9; color:#4E342E; }
+.cuisine-chinese { background:#FFEBEE; color:#C62828; }
+.cuisine-thai { background:#E0F7FA; color:#00695C; }
+.cuisine-street { background:#FBE9E7; color:#BF360C; }
+.cuisine-western { background:#ECEFF1; color:#37474F; }
+@media(prefers-color-scheme:dark){
+  .cuisine-vietnamese{background:#1B3A1B;} .cuisine-japanese{background:#3E2400;}
+  .cuisine-korean{background:#3E0A1F;} .cuisine-italian{background:#0A2540;}
+  .cuisine-french{background:#2A0A3E;} .cuisine-indian{background:#3E3000;}
+  .cuisine-mexican{background:#2E1A0A;} .cuisine-chinese{background:#3E0A0A;}
+  .cuisine-thai{background:#0A2E2E;} .cuisine-street{background:#3E1A0A;}
+  .cuisine-western{background:#1A2030;}
+}
+
+/* ═══ TODAY VIEW HEADER ═══ */
+.today-hero {
+  position:relative; border-radius:var(--radius); overflow:hidden;
+  height:140px; margin-bottom:16px;
+}
+.today-hero img {
+  width:100%; height:100%; object-fit:cover;
+}
+.today-hero-overlay {
+  position:absolute; inset:0;
+  background:linear-gradient(135deg, rgba(232,82,26,.85), rgba(45,80,22,.7));
+  display:flex; flex-direction:column; justify-content:center; align-items:center;
+  color:#fff; text-align:center; padding:16px;
+}
+.today-hero h2 { font-family:var(--font-display); font-size:24px; text-shadow:0 2px 8px rgba(0,0,0,.2); }
+.today-hero p { font-size:13px; opacity:.9; margin-top:4px; }
+.meal-tabs { display:flex; gap:8px; margin-bottom:16px; }
+.meal-tab {
+  flex:1; padding:10px; border-radius:12px; border:2px solid var(--border);
+  background:var(--card); text-align:center; cursor:pointer; font-weight:600;
+  font-size:13px; transition:all .2s; font-family:var(--font-ui); min-height:44px;
+  position:relative; overflow:hidden;
+}
+.meal-tab.active { border-color:var(--primary); background:rgba(232,82,26,.06); color:var(--primary); }
+.meal-tab .tab-icon { font-size:20px; display:block; }
+
+.section-title {
+  font-family:var(--font-display); font-size:17px; margin:16px 0 10px;
+}
+
+/* ═══ EMPTY STATE ═══ */
+.empty-state {
+  text-align:center; padding:40px 20px; color:var(--muted);
+}
+.empty-state .empty-icon { font-size:48px; margin-bottom:12px; }
+.empty-state p { font-size:14px; }
+
+/* ═══ BTN ═══ */
+.btn-primary {
+  padding:12px 20px; border:none; border-radius:12px; background:var(--primary);
+  color:#fff; font-family:var(--font-ui); font-size:14px; font-weight:700;
+  cursor:pointer; min-height:44px; transition:all .2s;
+}
+.btn-primary:hover { background:var(--primary-light); }
+.btn-outline {
+  padding:10px 16px; border:2px solid var(--primary); border-radius:12px;
+  background:transparent; color:var(--primary); font-family:var(--font-ui);
+  font-size:13px; font-weight:700; cursor:pointer; min-height:44px;
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ HEADER ═══ -->
+<header class="app-header">
+  <div class="app-title">🍜 Bữa Cơm Gia Đình</div>
+  <div class="app-subtitle">Family Meal Planner — Hà Nội</div>
+</header>
+
+<!-- ═══ MEMBER SELECTOR ═══ -->
+<div class="member-selector" id="member-selector"></div>
+<div class="member-count" id="member-count"></div>
+
+<!-- ═══ VIEW: SCHEDULE ═══ -->
+<div id="view-schedule" class="view active">
+  <div id="week-grid" class="week-scroll"></div>
+</div>
+
+<!-- ═══ VIEW: TODAY ═══ -->
+<div id="view-today" class="view">
+  <div class="today-hero" id="today-hero">
+    <img src="https://loremflickr.com/800/400/food,dinner?lock=99" alt="" loading="lazy">
+    <div class="today-hero-overlay">
+      <h2 id="today-title"></h2>
+      <p id="today-subtitle"></p>
+    </div>
+  </div>
+  <div id="meal-tabs" class="meal-tabs"></div>
+  <div id="voting-section"></div>
+  <h3 class="section-title" id="suggestions-title">Gợi ý món ăn</h3>
+  <div id="cuisine-filter" class="cuisine-filter"></div>
+  <div id="food-suggestions"></div>
+</div>
+
+<!-- ═══ VIEW: SEARCH ═══ -->
+<div id="view-search" class="view">
+  <div class="search-bar">
+    <span>🔍</span>
+    <input type="text" id="search-input" placeholder="Tìm nhà hàng hoặc món ăn ở Hà Nội...">
+  </div>
+  <div id="search-filters" class="filter-scroll"></div>
+  <div id="search-results" class="restaurant-grid"></div>
+</div>
+
+<!-- ═══ VIEW: HISTORY ═══ -->
+<div id="view-history" class="view">
+  <h2 style="font-family:var(--font-display);font-size:20px;margin-bottom:16px;">📜 Lịch sử bữa ăn<br><span style="font-size:13px;color:var(--muted);font-family:var(--font-ui)">Meal History</span></h2>
+  <div id="history-list"></div>
+</div>
+
+<!-- ═══ MODAL ═══ -->
+<div id="modal" class="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal-sheet" id="modal-content"></div>
+</div>
+
+<!-- ═══ BOTTOM NAV ═══ -->
+<nav class="bottom-nav">
+  <button class="nav-item active" onclick="switchView('schedule')">
+    <span class="nav-icon">🗓️</span><span class="nav-label">Lịch</span><span class="nav-sub">Schedule</span>
+  </button>
+  <button class="nav-item" onclick="switchView('today')">
+    <span class="nav-icon">🍽️</span><span class="nav-label">Hôm Nay</span><span class="nav-sub">Today</span>
+  </button>
+  <button class="nav-item" onclick="switchView('search')">
+    <span class="nav-icon">🔍</span><span class="nav-label">Tìm</span><span class="nav-sub">Search</span>
+  </button>
+  <button class="nav-item" onclick="switchView('history')">
+    <span class="nav-icon">📜</span><span class="nav-label">Lịch Sử</span><span class="nav-sub">History</span>
+  </button>
+</nav>
+
+<script>
+// ═══════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════
+const CONFIG = {
+  googleApiKey: "YOUR_KEY_HERE"
+};
+
+// ═══════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════
+const DATA = {
+  members: {
+    dad: { id:'dad', name:'Bố', nameEn:'Dad', icon:'👨', order:0 },
+    mom: { id:'mom', name:'Mẹ', nameEn:'Mom', icon:'👩', order:1 },
+    son: { id:'son', name:'Con trai', nameEn:'Son', icon:'👦', order:2 },
+    daughter: { id:'daughter', name:'Con gái', nameEn:'Daughter', icon:'👧', order:3 },
+  },
+  // Taste matrix: likes=2, soso=1, dislikes=-2
+  tastes: {
+    dad: {
+      cuisines: { mexican:2,indian:2,japanese:2,thai:2,north_african:2,vietnamese:2,french:2,italian:2,chinese:2,korean:1,western:1,street:1 },
+      tags: { pizza:2,burgers:2,sandwiches:2,raw_seafood:2,fresh_seafood:2,spicy:2,exotic:2,onions:2,garlic:2,cilantro:2,fried_tofu:2,fish_sauce:2,soy_sauce:2,hotpot:1,fruits:1,oily:-2,high_fat:-2,heavy_sauce:-2,creamy:-2,frozen:-2,heavy_dressing:-2 }
+    },
+    mom: {
+      cuisines: { vietnamese:2,korean:2,street:2,japanese:1,thai:1,french:1,italian:1,mexican:-2,indian:-2,western:-2 },
+      tags: { fish_sauce:1,soy_sauce:1,french_fries:1,fruits:1,burgers:-2,sandwiches:-2,junk:-2,raw_seafood:-2,spicy:-2 }
+    },
+    son: {
+      cuisines: { mexican:2,indian:2,japanese:2,vietnamese:1,french:2,italian:2,korean:1,western:2,street:1 },
+      tags: { pizza:2,burgers:2,sandwiches:2,raw_seafood:2,fresh_seafood:2,exotic:2,hotpot:1,salad:1,fruits:-2,vegetables:-2,spicy:-2 }
+    },
+    daughter: {
+      cuisines: { italian:2,french:2,japanese:1,vietnamese:1,western:1,korean:0 },
+      tags: { cheese:2,mac_cheese:2,olives:2,pork:2,fried_tofu:2,fried_garlic:2,burgers:1,pizza:1,cooked_seafood:1,mexican:-2,indian:-2,fruits:-2,vegetables:-2,onions:-2,garlic:-2,spicy:-2 }
+    }
+  },
+  // 40+ dishes
+  dishes: [
+    // ═══════════════════════════════════
+    // VIETNAMESE (20 dishes)
+    // ═══════════════════════════════════
+    { id:'pho_bo', nameVi:'Phở Bò', nameEn:'Beef Pho', cuisine:'vietnamese', meal:['breakfast','lunch','dinner'], spice:1, time:'30p', price:1, tags:['onions','cilantro','fish_sauce'], ingredients:['Bánh phở','Thịt bò','Hành lá','Ngò','Nước dùng xương'], desc:'Món phở truyền thống Hà Nội với nước dùng xương hầm trong 12 tiếng.' },
+    { id:'pho_ga', nameVi:'Phở Gà', nameEn:'Chicken Pho', cuisine:'vietnamese', meal:['breakfast','lunch'], spice:0, time:'25p', price:1, tags:['onions','cilantro'], ingredients:['Bánh phở','Thịt gà','Hành lá','Gừng','Nước dùng gà'], desc:'Phở gà thanh nhẹ, phù hợp mọi thành viên.' },
+    { id:'bun_cha', nameVi:'Bún Chả Hà Nội', nameEn:'Hanoi Grilled Pork Noodles', cuisine:'vietnamese', meal:['lunch','dinner'], spice:0, time:'25p', price:1, tags:['pork','fish_sauce','vegetables'], ingredients:['Bún','Thịt lợn nướng','Nước mắm pha','Rau sống','Nem cua bể'], desc:'Bún chả Hà Nội chính gốc với thịt nướng than hoa thơm lừng.' },
+    { id:'bun_bo_hue', nameVi:'Bún Bò Huế', nameEn:'Hue Spicy Beef Noodles', cuisine:'vietnamese', meal:['lunch','dinner'], spice:3, time:'35p', price:1, tags:['spicy','oily','fish_sauce'], ingredients:['Bún','Thịt bò','Chả cua','Mắm ruốc','Sả','Ớt'], desc:'Bún bò Huế cay nồng đậm đà đặc trưng miền Trung.' },
+    { id:'com_rang', nameVi:'Cơm Rang Dưa Bò', nameEn:'Beef Fried Rice with Pickles', cuisine:'vietnamese', meal:['lunch','dinner'], spice:0, time:'15p', price:1, tags:['oily'], ingredients:['Cơm nguội','Thịt bò','Dưa chua','Hành','Trứng'], desc:'Cơm rang đơn giản nhưng đậm đà hương vị.' },
+    { id:'cha_ca', nameVi:'Chả Cá Lã Vọng', nameEn:'Turmeric Fish with Dill', cuisine:'vietnamese', meal:['dinner'], spice:0, time:'30p', price:2, tags:['fresh_seafood','fish_sauce','onions'], ingredients:['Cá lăng','Nghệ','Thì là','Hành lá','Bún','Mắm tôm'], desc:'Đặc sản Hà Nội nổi tiếng với cá chiên nghệ và thì là thơm lừng.' },
+    { id:'nem_ran', nameVi:'Nem Rán (Chả Giò)', nameEn:'Vietnamese Spring Rolls', cuisine:'vietnamese', meal:['lunch','dinner'], spice:0, time:'40p', price:1, tags:['pork','oily'], ingredients:['Bánh đa nem','Thịt lợn xay','Miến','Nấm mèo','Cà rốt'], desc:'Nem rán giòn rụm, món không thể thiếu trong mâm cơm Việt.' },
+    { id:'bun_thang', nameVi:'Bún Thang', nameEn:'Hanoi Vermicelli with Chicken & Egg', cuisine:'vietnamese', meal:['breakfast','lunch'], spice:0, time:'35p', price:2, tags:['onions','fish_sauce'], ingredients:['Bún','Thịt gà xé','Trứng tráng','Giò lụa','Tôm khô','Rau răm'], desc:'Bún thang thanh tao, tinh tế — món bún quý tộc Hà Nội.' },
+    { id:'mien_ga', nameVi:'Miến Gà', nameEn:'Chicken Glass Noodle Soup', cuisine:'vietnamese', meal:['breakfast','lunch'], spice:0, time:'20p', price:1, tags:['onions','fish_sauce'], ingredients:['Miến dong','Thịt gà','Nấm hương','Hành phi','Rau mùi'], desc:'Miến gà nóng hổi, thanh nhẹ cho buổi sáng.' },
+    { id:'com_tam', nameVi:'Cơm Tấm Sườn Bì Chả', nameEn:'Broken Rice with Pork Chop', cuisine:'vietnamese', meal:['lunch','dinner'], spice:0, time:'20p', price:1, tags:['pork','fish_sauce','onions','garlic'], ingredients:['Cơm tấm','Sườn nướng','Bì','Chả trứng','Nước mắm pha','Đồ chua'], desc:'Cơm tấm Sài Gòn với sườn nướng mật ong thơm phức.' },
+    { id:'canh_chua', nameVi:'Canh Chua Cá', nameEn:'Sweet & Sour Fish Soup', cuisine:'vietnamese', meal:['lunch','dinner'], spice:0, time:'25p', price:1, tags:['fresh_seafood','fish_sauce','vegetables'], ingredients:['Cá lóc','Thơm','Cà chua','Đậu bắp','Me','Rau om'], desc:'Canh chua miền Nam chua ngọt tự nhiên.' },
+    { id:'ga_nuong', nameVi:'Gà Nướng Mật Ong', nameEn:'Honey Roasted Chicken', cuisine:'vietnamese', meal:['dinner'], spice:1, time:'45p', price:2, tags:['garlic','fish_sauce'], ingredients:['Đùi gà','Mật ong','Tỏi','Nước mắm','Sả','Tiêu'], desc:'Gà nướng mật ong vàng ruộm, thơm lừng sả tỏi.' },
+    { id:'lau_hai_san', nameVi:'Lẩu Hải Sản', nameEn:'Seafood Hotpot', cuisine:'vietnamese', meal:['dinner'], spice:1, time:'30p', price:2, tags:['fresh_seafood','hotpot','fish_sauce','vegetables'], ingredients:['Tôm','Mực','Cá','Nghêu','Rau muống','Nấm','Bún'], desc:'Lẩu hải sản nóng hổi với nước dùng chua cay.' },
+    { id:'bo_la_lot', nameVi:'Bò Lá Lốt', nameEn:'Beef Wrapped in Betel Leaves', cuisine:'vietnamese', meal:['dinner'], spice:1, time:'30p', price:1, tags:['pork','garlic','onions','fish_sauce'], ingredients:['Thịt bò xay','Lá lốt','Sả','Tỏi','Đậu phộng','Bún'], desc:'Bò cuộn lá lốt nướng than thơm nức mũi.' },
+    { id:'goi_cuon', nameVi:'Gỏi Cuốn Tôm Thịt', nameEn:'Fresh Spring Rolls', cuisine:'vietnamese', meal:['lunch','dinner'], spice:0, time:'15p', price:1, tags:['pork','fresh_seafood','vegetables','fish_sauce'], ingredients:['Bánh tráng','Tôm','Thịt lợn luộc','Bún','Rau sống','Nước chấm'], desc:'Gỏi cuốn tươi mát, nhẹ nhàng với tôm và thịt.' },
+    { id:'thit_kho_trung', nameVi:'Thịt Kho Trứng', nameEn:'Caramelized Pork Belly with Eggs', cuisine:'vietnamese', meal:['lunch','dinner'], spice:0, time:'50p', price:1, tags:['pork','fish_sauce','garlic'], ingredients:['Thịt ba chỉ','Trứng vịt','Nước dừa','Nước mắm','Đường','Tỏi'], desc:'Thịt kho trứng đậm đà kiểu miền Nam, ăn với cơm trắng.' },
+    { id:'ca_kho_to', nameVi:'Cá Kho Tộ', nameEn:'Claypot Caramelized Fish', cuisine:'vietnamese', meal:['lunch','dinner'], spice:1, time:'40p', price:1, tags:['fresh_seafood','fish_sauce','garlic','onions'], ingredients:['Cá basa','Nước mắm','Đường','Tiêu','Tỏi','Hành'], desc:'Cá kho tộ đậm đà trong nồi đất, ăn hoài không chán.' },
+    { id:'bun_rieu', nameVi:'Bún Riêu Cua', nameEn:'Crab Noodle Soup', cuisine:'vietnamese', meal:['breakfast','lunch'], spice:0, time:'30p', price:1, tags:['fresh_seafood','fish_sauce','vegetables'], ingredients:['Bún','Riêu cua','Đậu phụ','Cà chua','Mắm tôm','Rau sống'], desc:'Bún riêu cua chua thanh với riêu cua đồng tươi.' },
+    { id:'chao_ga', nameVi:'Cháo Gà', nameEn:'Chicken Rice Porridge', cuisine:'vietnamese', meal:['breakfast'], spice:0, time:'25p', price:1, tags:['onions','garlic'], ingredients:['Gạo','Thịt gà','Gừng','Hành phi','Rau mùi','Quẩy'], desc:'Cháo gà nóng hổi, bổ dưỡng cho buổi sáng se lạnh.' },
+    { id:'banh_tom', nameVi:'Bánh Tôm Hồ Tây', nameEn:'West Lake Shrimp Cake', cuisine:'vietnamese', meal:['lunch','dinner'], spice:0, time:'20p', price:1, tags:['fresh_seafood','oily','fish_sauce'], ingredients:['Tôm','Khoai lang','Bột chiên','Rau sống','Nước chấm'], desc:'Bánh tôm Hồ Tây giòn rụm, đặc sản ven hồ Hà Nội.' },
+
+    // ═══════════════════════════════════
+    // JAPANESE (15 dishes)
+    // ═══════════════════════════════════
+    { id:'sushi', nameVi:'Sushi Tổng Hợp', nameEn:'Assorted Sushi', cuisine:'japanese', meal:['lunch','dinner'], spice:0, time:'20p', price:3, tags:['raw_seafood','soy_sauce','fresh_seafood'], ingredients:['Cơm sushi','Cá hồi','Cá ngừ','Tôm','Bơ','Rong biển'], desc:'Set sushi tổng hợp với các loại cá tươi nhất.' },
+    { id:'sashimi', nameVi:'Sashimi Cá Hồi', nameEn:'Salmon Sashimi', cuisine:'japanese', meal:['lunch','dinner'], spice:0, time:'10p', price:3, tags:['raw_seafood','soy_sauce','fresh_seafood'], ingredients:['Cá hồi tươi','Wasabi','Gừng ngâm','Nước tương','Củ cải trắng'], desc:'Sashimi cá hồi tươi mát, tan trên đầu lưỡi.' },
+    { id:'ramen', nameVi:'Mì Ramen Tonkotsu', nameEn:'Tonkotsu Ramen', cuisine:'japanese', meal:['lunch','dinner'], spice:1, time:'20p', price:2, tags:['pork','soy_sauce','onions','garlic'], ingredients:['Mì ramen','Nước dùng xương heo','Trứng lòng đào','Chashu','Nori'], desc:'Ramen nước dùng xương heo đặc sánh, béo ngậy.' },
+    { id:'ramen_miso', nameVi:'Mì Ramen Miso', nameEn:'Miso Ramen', cuisine:'japanese', meal:['lunch','dinner'], spice:1, time:'20p', price:2, tags:['soy_sauce','garlic','onions'], ingredients:['Mì ramen','Tương miso','Bắp ngô','Bơ','Thịt lợn xay','Giá đỗ'], desc:'Ramen miso Hokkaido đậm đà với bắp ngô ngọt.' },
+    { id:'tempura', nameVi:'Tempura Tôm & Rau', nameEn:'Shrimp & Vegetable Tempura', cuisine:'japanese', meal:['lunch','dinner'], spice:0, time:'20p', price:2, tags:['fresh_seafood','oily','vegetables'], ingredients:['Tôm','Bí ngòi','Khoai lang','Bột tempura','Nước chấm tentsuyu'], desc:'Tempura giòn nhẹ kiểu Nhật chính thống.' },
+    { id:'gyudon', nameVi:'Cơm Bò Gyudon', nameEn:'Beef Rice Bowl', cuisine:'japanese', meal:['lunch','dinner'], spice:0, time:'15p', price:2, tags:['onions','soy_sauce'], ingredients:['Cơm','Thịt bò thái mỏng','Hành tây','Nước tương','Trứng'], desc:'Cơm thịt bò kiểu Nhật đơn giản mà ngon.' },
+    { id:'udon', nameVi:'Mì Udon Nóng', nameEn:'Hot Udon Noodles', cuisine:'japanese', meal:['lunch','dinner'], spice:0, time:'15p', price:2, tags:['soy_sauce'], ingredients:['Mì udon','Nước dùng dashi','Hành lá','Tempura bits','Kamaboko'], desc:'Mì udon nóng hổi với nước dùng trong veo.' },
+    { id:'katsu_curry', nameVi:'Cơm Cà Ri Thịt Heo Chiên', nameEn:'Tonkatsu Curry Rice', cuisine:'japanese', meal:['lunch','dinner'], spice:1, time:'25p', price:2, tags:['pork','oily','onions'], ingredients:['Thịt heo chiên xù','Cà ri Nhật','Cơm','Rau củ','Dưa chua'], desc:'Tonkatsu giòn rụm kèm cà ri Nhật ngọt dịu.' },
+    { id:'takoyaki', nameVi:'Bánh Bạch Tuộc Takoyaki', nameEn:'Octopus Balls', cuisine:'japanese', meal:['lunch'], spice:0, time:'15p', price:1, tags:['fresh_seafood','soy_sauce'], ingredients:['Bột takoyaki','Bạch tuộc','Sốt takoyaki','Mayonnaise','Cá bào','Rong biển'], desc:'Takoyaki viên tròn giòn ngoài mềm trong.' },
+    { id:'okonomiyaki', nameVi:'Bánh Xèo Nhật Bản', nameEn:'Japanese Savory Pancake', cuisine:'japanese', meal:['lunch','dinner'], spice:0, time:'20p', price:2, tags:['pork','soy_sauce','garlic'], ingredients:['Bột mì','Bắp cải','Thịt lợn','Trứng','Sốt okonomiyaki','Mayonnaise'], desc:'Okonomiyaki kiểu Osaka với bắp cải giòn ngọt.' },
+    { id:'onigiri', nameVi:'Cơm Nắm Onigiri', nameEn:'Rice Balls', cuisine:'japanese', meal:['breakfast','lunch'], spice:0, time:'10p', price:1, tags:['soy_sauce','fresh_seafood'], ingredients:['Cơm Nhật','Rong biển','Cá hồi','Umeboshi','Tôm tempura'], desc:'Onigiri cơm nắm tiện lợi với nhân cá hồi.' },
+    { id:'chirashi', nameVi:'Chirashi Don', nameEn:'Scattered Sushi Bowl', cuisine:'japanese', meal:['lunch','dinner'], spice:0, time:'15p', price:3, tags:['raw_seafood','soy_sauce','fresh_seafood'], ingredients:['Cơm sushi','Cá hồi','Cá ngừ','Trứng cá','Bơ','Dưa chuột'], desc:'Chirashi bowl đầy màu sắc với hải sản tươi sống.' },
+    { id:'gyoza', nameVi:'Há Cảo Chiên Gyoza', nameEn:'Pan-fried Dumplings', cuisine:'japanese', meal:['lunch','dinner'], spice:0, time:'15p', price:1, tags:['pork','garlic','onions','soy_sauce'], ingredients:['Vỏ gyoza','Thịt lợn xay','Bắp cải','Tỏi','Gừng','Nước tương'], desc:'Gyoza chiên giòn đáy, mềm trên, nhân thịt thơm.' },
+    { id:'teriyaki_salmon', nameVi:'Cá Hồi Teriyaki', nameEn:'Teriyaki Salmon', cuisine:'japanese', meal:['dinner'], spice:0, time:'20p', price:3, tags:['fresh_seafood','soy_sauce','garlic'], ingredients:['Cá hồi phi lê','Sốt teriyaki','Mè rang','Bông cải xanh','Cơm'], desc:'Cá hồi áp chảo sốt teriyaki ngọt mặn hoàn hảo.' },
+    { id:'miso_soup', nameVi:'Súp Miso Đậu Hũ', nameEn:'Miso Soup with Tofu', cuisine:'japanese', meal:['breakfast','lunch','dinner'], spice:0, time:'10p', price:1, tags:['fried_tofu','soy_sauce'], ingredients:['Tương miso','Đậu hũ non','Rong biển wakame','Hành lá','Dashi'], desc:'Súp miso ấm bụng, món khai vị kinh điển Nhật Bản.' },
+
+    // ═══════════════════════════════════
+    // KOREAN (12 dishes)
+    // ═══════════════════════════════════
+    { id:'bibimbap', nameVi:'Cơm Trộn Bibimbap', nameEn:'Bibimbap', cuisine:'korean', meal:['lunch','dinner'], spice:2, time:'25p', price:2, tags:['vegetables','spicy','garlic'], ingredients:['Cơm','Rau trộn','Thịt bò','Trứng ốp la','Tương ớt gochujang'], desc:'Cơm trộn Hàn Quốc đầy màu sắc với tương ớt gochujang.' },
+    { id:'kimbap', nameVi:'Kimbap Hàn Quốc', nameEn:'Korean Rice Rolls', cuisine:'korean', meal:['breakfast','lunch'], spice:0, time:'20p', price:1, tags:['vegetables','soy_sauce'], ingredients:['Cơm','Rong biển','Cà rốt','Dưa chuột','Trứng','Cua'], desc:'Kimbap cuộn gọn gàng, tiện mang đi.' },
+    { id:'tteokbokki', nameVi:'Bánh Gạo Cay Tteokbokki', nameEn:'Spicy Rice Cakes', cuisine:'korean', meal:['lunch','dinner'], spice:3, time:'15p', price:1, tags:['spicy','street'], ingredients:['Bánh gạo','Tương ớt gochujang','Chả cá','Hành lá'], desc:'Bánh gạo cay ngọt đường phố Hàn Quốc.' },
+    { id:'japchae', nameVi:'Miến Xào Japchae', nameEn:'Glass Noodle Stir-fry', cuisine:'korean', meal:['lunch','dinner'], spice:0, time:'20p', price:2, tags:['vegetables','soy_sauce','garlic'], ingredients:['Miến','Thịt bò','Rau chân vịt','Cà rốt','Nấm','Dầu mè'], desc:'Miến xào Hàn Quốc với rau củ đầy màu sắc.' },
+    { id:'bulgogi', nameVi:'Thịt Bò Nướng Bulgogi', nameEn:'Korean BBQ Beef', cuisine:'korean', meal:['dinner'], spice:1, time:'25p', price:2, tags:['garlic','onions','soy_sauce'], ingredients:['Thịt bò thái mỏng','Lê','Nước tương','Dầu mè','Tỏi','Hành tây'], desc:'Bulgogi thịt bò ướp lê ngọt, nướng than thơm lừng.' },
+    { id:'kimchi_jjigae', nameVi:'Lẩu Kim Chi', nameEn:'Kimchi Stew', cuisine:'korean', meal:['dinner'], spice:2, time:'25p', price:1, tags:['spicy','pork','garlic','onions'], ingredients:['Kim chi','Thịt lợn','Đậu hũ','Hành lá','Nước dùng','Cơm'], desc:'Kimchi jjigae nóng hổi chua cay đậm đà.' },
+    { id:'korean_fried_chicken', nameVi:'Gà Chiên Kiểu Hàn', nameEn:'Korean Fried Chicken', cuisine:'korean', meal:['lunch','dinner'], spice:1, time:'25p', price:2, tags:['oily','garlic','soy_sauce'], ingredients:['Cánh gà','Bột chiên','Sốt gochujang','Tỏi','Mè','Dưa cải'], desc:'Gà chiên giòn double-fried với sốt cay ngọt.' },
+    { id:'samgyeopsal', nameVi:'Thịt Ba Chỉ Nướng', nameEn:'Grilled Pork Belly', cuisine:'korean', meal:['dinner'], spice:0, time:'20p', price:2, tags:['pork','garlic','onions'], ingredients:['Thịt ba chỉ','Rau diếp','Tỏi nướng','Ssamjang','Kim chi','Cơm'], desc:'Thịt ba chỉ nướng cuốn rau kiểu Hàn Quốc.' },
+    { id:'sundubu', nameVi:'Lẩu Đậu Hũ Non', nameEn:'Soft Tofu Stew', cuisine:'korean', meal:['dinner'], spice:2, time:'20p', price:1, tags:['spicy','fried_tofu','garlic','fresh_seafood'], ingredients:['Đậu hũ non','Hải sản','Trứng','Tương ớt','Hành lá','Cơm'], desc:'Sundubu jjigae đậu hũ non mềm mịn trong nước dùng cay.' },
+    { id:'jajangmyeon', nameVi:'Mì Tương Đen', nameEn:'Black Bean Noodles', cuisine:'korean', meal:['lunch','dinner'], spice:0, time:'20p', price:1, tags:['onions','garlic','pork'], ingredients:['Mì tươi','Tương đen','Thịt lợn xay','Hành tây','Bí ngòi','Dưa chuột'], desc:'Jajangmyeon mì tương đen béo ngậy kiểu Hàn.' },
+    { id:'tteok_galbi', nameVi:'Sườn Bò Non Nướng', nameEn:'Grilled Short Ribs', cuisine:'korean', meal:['dinner'], spice:0, time:'30p', price:3, tags:['garlic','soy_sauce','onions'], ingredients:['Sườn bò non','Nước tương','Đường','Tỏi','Dầu mè','Lê'], desc:'Galbi sườn bò non nướng ướp ngọt, mềm tan trong miệng.' },
+    { id:'hotteok', nameVi:'Bánh Hotteok Nhân Đường', nameEn:'Sweet Korean Pancake', cuisine:'korean', meal:['breakfast'], spice:0, time:'15p', price:1, tags:[], ingredients:['Bột mì','Men','Đường nâu','Quế','Đậu phộng','Mè'], desc:'Hotteok bánh rán nhân đường nâu nóng hổi.' },
+
+    // ═══════════════════════════════════
+    // ITALIAN (12 dishes)
+    // ═══════════════════════════════════
+    { id:'pasta_carbonara', nameVi:'Mì Ý Carbonara', nameEn:'Spaghetti Carbonara', cuisine:'italian', meal:['lunch','dinner'], spice:0, time:'20p', price:2, tags:['cheese','creamy','pork','garlic'], ingredients:['Spaghetti','Thịt xông khói','Trứng','Phô mai Pecorino','Tiêu đen'], desc:'Carbonara chính gốc La Mã với trứng và phô mai.' },
+    { id:'pasta_bolognese', nameVi:'Mì Ý Sốt Bò Bằm', nameEn:'Spaghetti Bolognese', cuisine:'italian', meal:['lunch','dinner'], spice:0, time:'30p', price:2, tags:['onions','garlic'], ingredients:['Spaghetti','Thịt bò xay','Cà chua','Hành tây','Tỏi','Cà rốt','Rượu vang'], desc:'Bolognese sốt thịt bò hầm chậm đậm đà kiểu Ý.' },
+    { id:'pasta_aglio', nameVi:'Mì Ý Tỏi Ớt', nameEn:'Aglio e Olio', cuisine:'italian', meal:['lunch','dinner'], spice:1, time:'15p', price:1, tags:['garlic','spicy'], ingredients:['Spaghetti','Tỏi','Ớt khô','Dầu ô liu','Rau mùi tây','Phô mai'], desc:'Aglio e olio đơn giản chỉ tỏi và dầu ô liu nhưng tuyệt ngon.' },
+    { id:'pizza_margherita', nameVi:'Pizza Margherita', nameEn:'Margherita Pizza', cuisine:'italian', meal:['lunch','dinner'], spice:0, time:'25p', price:2, tags:['pizza','cheese'], ingredients:['Bột pizza','Sốt cà chua','Mozzarella','Lá basil','Dầu ô liu'], desc:'Pizza truyền thống Ý với mozzarella tươi.' },
+    { id:'pizza_pepperoni', nameVi:'Pizza Pepperoni', nameEn:'Pepperoni Pizza', cuisine:'italian', meal:['lunch','dinner'], spice:1, time:'25p', price:2, tags:['pizza','cheese','pork','spicy'], ingredients:['Bột pizza','Sốt cà chua','Mozzarella','Pepperoni','Dầu ô liu'], desc:'Pizza pepperoni cay nhẹ với lớp phô mai kéo sợi.' },
+    { id:'risotto', nameVi:'Risotto Nấm', nameEn:'Mushroom Risotto', cuisine:'italian', meal:['dinner'], spice:0, time:'30p', price:2, tags:['cheese','garlic','onions'], ingredients:['Gạo arborio','Nấm hỗn hợp','Phô mai parmesan','Hành tây','Rượu vang trắng'], desc:'Risotto kem nấm thơm lừng kiểu Ý.' },
+    { id:'lasagna', nameVi:'Lasagna Bò Bằm', nameEn:'Beef Lasagna', cuisine:'italian', meal:['dinner'], spice:0, time:'60p', price:2, tags:['cheese','pork','heavy_sauce'], ingredients:['Mì lasagna','Thịt bò bằm','Sốt béchamel','Sốt cà chua','Mozzarella'], desc:'Lasagna nhiều lớp với thịt bò và phô mai tan chảy.' },
+    { id:'gnocchi', nameVi:'Gnocchi Sốt Bơ Xô Thơm', nameEn:'Gnocchi with Sage Butter', cuisine:'italian', meal:['lunch','dinner'], spice:0, time:'25p', price:2, tags:['cheese'], ingredients:['Khoai tây','Bột mì','Bơ','Lá xô thơm','Phô mai parmesan'], desc:'Gnocchi khoai tây mềm mịn trong sốt bơ lá xô thơm.' },
+    { id:'bruschetta', nameVi:'Bruschetta Cà Chua', nameEn:'Tomato Bruschetta', cuisine:'italian', meal:['breakfast','lunch'], spice:0, time:'10p', price:1, tags:['garlic','vegetables'], ingredients:['Bánh mì ciabatta','Cà chua','Tỏi','Basil','Dầu ô liu','Muối biển'], desc:'Bruschetta giòn với cà chua tươi và basil thơm.' },
+    { id:'penne_arrabbiata', nameVi:'Penne Arrabbiata', nameEn:'Spicy Penne Pasta', cuisine:'italian', meal:['lunch','dinner'], spice:2, time:'20p', price:1, tags:['spicy','garlic'], ingredients:['Penne','Cà chua','Ớt khô','Tỏi','Dầu ô liu','Rau mùi tây'], desc:'Penne arrabbiata cay nồng kiểu La Mã.' },
+    { id:'tiramisu', nameVi:'Tiramisu', nameEn:'Classic Tiramisu', cuisine:'italian', meal:['lunch','dinner'], spice:0, time:'15p', price:2, tags:['cheese','creamy'], ingredients:['Mascarpone','Bánh ladyfinger','Cà phê espresso','Cacao','Trứng','Đường'], desc:'Tiramisu kem mascarpone mịn màng, đắng nhẹ cà phê.' },
+    { id:'caprese', nameVi:'Salad Caprese', nameEn:'Caprese Salad', cuisine:'italian', meal:['lunch'], spice:0, time:'5p', price:2, tags:['cheese','vegetables'], ingredients:['Mozzarella tươi','Cà chua','Basil','Dầu ô liu','Giấm balsamic'], desc:'Salad Caprese đơn giản với mozzarella tươi và cà chua.' },
+
+    // ═══════════════════════════════════
+    // FRENCH (10 dishes)
+    // ═══════════════════════════════════
+    { id:'croissant', nameVi:'Croissant Bơ', nameEn:'Butter Croissant', cuisine:'french', meal:['breakfast'], spice:0, time:'5p', price:2, tags:[], ingredients:['Bột mì','Bơ Pháp','Trứng','Men','Sữa'], desc:'Croissant bơ giòn xốp, phù hợp bữa sáng nhẹ.' },
+    { id:'french_toast', nameVi:'Bánh Mì Nướng Kiểu Pháp', nameEn:'French Toast', cuisine:'french', meal:['breakfast'], spice:0, time:'10p', price:1, tags:[], ingredients:['Bánh mì gối','Trứng','Sữa','Bơ','Mật ong'], desc:'French toast thơm lừng bơ và mật ong.' },
+    { id:'quiche', nameVi:'Quiche Lorraine', nameEn:'Quiche Lorraine', cuisine:'french', meal:['breakfast','lunch'], spice:0, time:'40p', price:2, tags:['cheese','pork','onions','creamy'], ingredients:['Vỏ bánh tart','Thịt xông khói','Kem tươi','Trứng','Phô mai Gruyère'], desc:'Quiche trứng béo ngậy kiểu Pháp với thịt xông khói.' },
+    { id:'croque_monsieur', nameVi:'Croque Monsieur', nameEn:'French Grilled Ham & Cheese', cuisine:'french', meal:['breakfast','lunch'], spice:0, time:'15p', price:2, tags:['cheese','sandwiches','pork'], ingredients:['Bánh mì gối','Jambon','Phô mai Gruyère','Sốt béchamel','Bơ'], desc:'Sandwich nướng phô mai tan chảy kiểu Pháp.' },
+    { id:'coq_au_vin', nameVi:'Gà Hầm Rượu Vang', nameEn:'Coq au Vin', cuisine:'french', meal:['dinner'], spice:0, time:'60p', price:3, tags:['onions','garlic'], ingredients:['Đùi gà','Rượu vang đỏ','Nấm','Hành tây pearl','Thịt xông khói','Cà rốt'], desc:'Gà hầm rượu vang đỏ Burgundy, món kinh điển Pháp.' },
+    { id:'ratatouille', nameVi:'Ratatouille Rau Củ', nameEn:'Ratatouille', cuisine:'french', meal:['lunch','dinner'], spice:0, time:'40p', price:1, tags:['vegetables','garlic','onions'], ingredients:['Cà tím','Bí ngòi','Ớt chuông','Cà chua','Tỏi','Thyme','Dầu ô liu'], desc:'Ratatouille rau củ Provence đầy màu sắc, thanh nhẹ.' },
+    { id:'crepes', nameVi:'Bánh Crepe Nhân Mặn/Ngọt', nameEn:'French Crepes', cuisine:'french', meal:['breakfast','lunch'], spice:0, time:'15p', price:1, tags:['cheese'], ingredients:['Bột mì','Trứng','Sữa','Bơ','Jambon/Nutella','Phô mai/Trái cây'], desc:'Crepe mỏng tang kiểu Pháp, nhân mặn hoặc ngọt.' },
+    { id:'french_onion_soup', nameVi:'Súp Hành Pháp', nameEn:'French Onion Soup', cuisine:'french', meal:['lunch','dinner'], spice:0, time:'45p', price:2, tags:['onions','cheese'], ingredients:['Hành tây','Bơ','Nước dùng bò','Rượu vang','Bánh mì','Phô mai Gruyère'], desc:'Súp hành Pháp với lớp phô mai nướng vàng bề mặt.' },
+    { id:'steak_frites', nameVi:'Bò Bít Tết & Khoai Tây', nameEn:'Steak Frites', cuisine:'french', meal:['dinner'], spice:0, time:'20p', price:3, tags:['french_fries'], ingredients:['Thịt bò phi lê','Khoai tây chiên','Bơ tỏi','Thyme','Rau salad'], desc:'Steak frites kiểu bistro Pháp, bò medium-rare hoàn hảo.' },
+    { id:'pain_au_chocolat', nameVi:'Bánh Sừng Bò Sô Cô La', nameEn:'Chocolate Croissant', cuisine:'french', meal:['breakfast'], spice:0, time:'5p', price:2, tags:[], ingredients:['Bột ngàn lớp','Sô cô la đen','Bơ','Trứng'], desc:'Pain au chocolat giòn bơ với sô cô la đen tan chảy.' },
+
+    // ═══════════════════════════════════
+    // INDIAN (8 dishes)
+    // ═══════════════════════════════════
+    { id:'butter_chicken', nameVi:'Gà Bơ Ấn Độ', nameEn:'Butter Chicken', cuisine:'indian', meal:['dinner'], spice:2, time:'35p', price:2, tags:['spicy','creamy','garlic','onions'], ingredients:['Đùi gà','Bơ','Kem','Cà chua','Garam masala','Gừng tỏi'], desc:'Gà bơ Ấn Độ với sốt cà chua kem béo ngậy.' },
+    { id:'naan', nameVi:'Bánh Naan & Cà Ri', nameEn:'Naan with Curry', cuisine:'indian', meal:['dinner'], spice:2, time:'25p', price:2, tags:['spicy','garlic'], ingredients:['Bột mì','Sữa chua','Bơ','Cà ri gà','Gia vị Ấn Độ'], desc:'Bánh naan nướng lò tandoor kèm cà ri thơm nức.' },
+    { id:'tikka_masala', nameVi:'Gà Tikka Masala', nameEn:'Chicken Tikka Masala', cuisine:'indian', meal:['dinner'], spice:2, time:'30p', price:2, tags:['spicy','garlic','onions','creamy'], ingredients:['Ức gà','Sữa chua','Gia vị tikka','Cà chua','Kem','Garam masala'], desc:'Tikka masala gà nướng tandoor trong sốt masala cay thơm.' },
+    { id:'biryani', nameVi:'Cơm Biryani Gà', nameEn:'Chicken Biryani', cuisine:'indian', meal:['lunch','dinner'], spice:2, time:'40p', price:2, tags:['spicy','garlic','onions'], ingredients:['Gạo basmati','Thịt gà','Nghệ','Saffron','Hành phi','Bạc hà','Sữa chua'], desc:'Biryani cơm gia vị Ấn Độ thơm saffron, tầng tầng hương vị.' },
+    { id:'palak_paneer', nameVi:'Phô Mai Ấn Độ Sốt Rau Chân Vịt', nameEn:'Palak Paneer', cuisine:'indian', meal:['dinner'], spice:1, time:'25p', price:2, tags:['cheese','vegetables','garlic','spicy'], ingredients:['Paneer','Rau chân vịt','Tỏi','Gừng','Kem','Garam masala'], desc:'Palak paneer phô mai tươi trong sốt rau chân vịt xanh mượt.' },
+    { id:'samosa', nameVi:'Bánh Samosa', nameEn:'Vegetable Samosa', cuisine:'indian', meal:['lunch'], spice:2, time:'20p', price:1, tags:['spicy','oily','vegetables'], ingredients:['Bột mì','Khoai tây','Đậu Hà Lan','Gia vị','Gừng','Sốt bạc hà'], desc:'Samosa giòn rụm nhân khoai tây và đậu gia vị.' },
+    { id:'dal', nameVi:'Đậu Lăng Ấn Độ', nameEn:'Dal Tadka', cuisine:'indian', meal:['lunch','dinner'], spice:1, time:'25p', price:1, tags:['garlic','onions','spicy'], ingredients:['Đậu lăng','Cà chua','Tỏi','Gừng','Nghệ','Bơ ghee','Rau mùi'], desc:'Dal tadka đậu lăng hầm mềm, béo ngậy bơ ghee.' },
+    { id:'tandoori_chicken', nameVi:'Gà Nướng Tandoori', nameEn:'Tandoori Chicken', cuisine:'indian', meal:['dinner'], spice:2, time:'35p', price:2, tags:['spicy','garlic'], ingredients:['Đùi gà','Sữa chua','Bột ớt','Nghệ','Garam masala','Chanh'], desc:'Gà tandoori đỏ au nướng lò đất, thơm gia vị đặc trưng.' },
+
+    // ═══════════════════════════════════
+    // MEXICAN (8 dishes)
+    // ═══════════════════════════════════
+    { id:'tacos', nameVi:'Tacos Bò', nameEn:'Beef Tacos', cuisine:'mexican', meal:['lunch','dinner'], spice:2, time:'20p', price:2, tags:['spicy','onions','cilantro'], ingredients:['Vỏ taco','Thịt bò xay','Phô mai','Rau diếp','Salsa','Kem chua'], desc:'Tacos thịt bò kiểu Mexico với salsa tươi.' },
+    { id:'burrito', nameVi:'Burrito Gà', nameEn:'Chicken Burrito', cuisine:'mexican', meal:['lunch','dinner'], spice:1, time:'15p', price:2, tags:['onions','cilantro'], ingredients:['Tortilla lớn','Gà xé','Cơm','Đậu đen','Phô mai','Guacamole'], desc:'Burrito cuộn lớn nhồi gà và guacamole.' },
+    { id:'quesadilla', nameVi:'Quesadilla Phô Mai', nameEn:'Cheese Quesadilla', cuisine:'mexican', meal:['lunch','dinner'], spice:0, time:'10p', price:1, tags:['cheese','onions'], ingredients:['Tortilla','Phô mai','Ớt chuông','Hành tây','Kem chua','Guacamole'], desc:'Quesadilla phô mai kéo sợi giòn rụm.' },
+    { id:'nachos', nameVi:'Nachos Phô Mai', nameEn:'Loaded Nachos', cuisine:'mexican', meal:['lunch'], spice:1, time:'10p', price:1, tags:['cheese','onions','cilantro'], ingredients:['Tortilla chips','Phô mai nacho','Đậu đen','Jalapeño','Salsa','Kem chua'], desc:'Nachos giòn phủ phô mai tan chảy và đủ topping.' },
+    { id:'enchiladas', nameVi:'Enchiladas Gà', nameEn:'Chicken Enchiladas', cuisine:'mexican', meal:['dinner'], spice:2, time:'30p', price:2, tags:['spicy','cheese','onions','cilantro'], ingredients:['Tortilla','Gà xé','Sốt enchilada','Phô mai','Kem chua','Hành lá'], desc:'Enchiladas cuộn gà nướng phô mai vàng rộm.' },
+    { id:'guacamole_chips', nameVi:'Guacamole & Chips', nameEn:'Guacamole with Tortilla Chips', cuisine:'mexican', meal:['lunch'], spice:1, time:'10p', price:1, tags:['cilantro','onions'], ingredients:['Bơ','Chanh','Hành tây','Cà chua','Rau mùi','Ớt','Tortilla chips'], desc:'Guacamole bơ tươi chấm chips giòn.' },
+    { id:'churros', nameVi:'Bánh Churros', nameEn:'Churros with Chocolate', cuisine:'mexican', meal:['breakfast','lunch'], spice:0, time:'15p', price:1, tags:[], ingredients:['Bột mì','Bơ','Trứng','Đường quế','Sốt sô cô la'], desc:'Churros giòn rắc đường quế chấm sô cô la nóng.' },
+    { id:'elote', nameVi:'Bắp Nướng Mexico', nameEn:'Mexican Street Corn', cuisine:'mexican', meal:['lunch','dinner'], spice:1, time:'15p', price:1, tags:['cheese','spicy','cilantro'], ingredients:['Bắp ngô','Mayonnaise','Phô mai cotija','Ớt bột','Chanh','Rau mùi'], desc:'Elote bắp nướng phủ phô mai và ớt bột kiểu Mexico.' },
+
+    // ═══════════════════════════════════
+    // CHINESE (10 dishes)
+    // ═══════════════════════════════════
+    { id:'dimsum', nameVi:'Dimsum Tổng Hợp', nameEn:'Assorted Dim Sum', cuisine:'chinese', meal:['breakfast','lunch'], spice:0, time:'20p', price:2, tags:['pork','fresh_seafood','soy_sauce'], ingredients:['Há cảo','Xíu mại','Bánh bao','Chân gà','Xá xíu'], desc:'Set dimsum đa dạng kiểu Quảng Đông.' },
+    { id:'peking_duck', nameVi:'Vịt Quay Bắc Kinh', nameEn:'Peking Duck', cuisine:'chinese', meal:['dinner'], spice:0, time:'20p', price:3, tags:['onions','garlic'], ingredients:['Vịt nguyên con','Bánh tráng','Hành lá','Dưa chuột','Sốt hoisin'], desc:'Vịt quay da giòn cuốn bánh tráng kèm hành lá.' },
+    { id:'fried_rice_cn', nameVi:'Cơm Chiên Dương Châu', nameEn:'Yangzhou Fried Rice', cuisine:'chinese', meal:['lunch','dinner'], spice:0, time:'15p', price:1, tags:['onions','garlic','oily'], ingredients:['Cơm nguội','Tôm','Lạp xưởng','Trứng','Đậu Hà Lan','Hành'], desc:'Cơm chiên Dương Châu nổi tiếng với tôm và lạp xưởng.' },
+    { id:'kung_pao', nameVi:'Gà Kung Pao', nameEn:'Kung Pao Chicken', cuisine:'chinese', meal:['lunch','dinner'], spice:2, time:'20p', price:2, tags:['spicy','garlic','onions','soy_sauce'], ingredients:['Ức gà','Đậu phộng','Ớt khô','Tỏi','Gừng','Nước tương','Giấm'], desc:'Kung Pao gà xào cay giòn với đậu phộng rang.' },
+    { id:'mapo_tofu', nameVi:'Đậu Phụ Ma Bà', nameEn:'Mapo Tofu', cuisine:'chinese', meal:['lunch','dinner'], spice:3, time:'15p', price:1, tags:['spicy','fried_tofu','garlic','soy_sauce','pork'], ingredients:['Đậu hũ non','Thịt lợn xay','Tương ớt đậu','Tiêu Tứ Xuyên','Hành lá','Tỏi'], desc:'Mapo tofu Tứ Xuyên cay tê đặc trưng.' },
+    { id:'char_siu', nameVi:'Xá Xíu Quảng Đông', nameEn:'Cantonese BBQ Pork', cuisine:'chinese', meal:['lunch','dinner'], spice:0, time:'40p', price:2, tags:['pork','garlic','soy_sauce'], ingredients:['Thịt vai heo','Mật ong','Ngũ vị hương','Nước tương','Rượu Thiệu Hưng','Phẩm đỏ'], desc:'Xá xíu Quảng Đông ngọt mặn với lớp caramel bóng đẹp.' },
+    { id:'wonton_soup', nameVi:'Hoành Thánh Nước', nameEn:'Wonton Soup', cuisine:'chinese', meal:['breakfast','lunch'], spice:0, time:'20p', price:1, tags:['pork','fresh_seafood','soy_sauce'], ingredients:['Vỏ hoành thánh','Tôm','Thịt lợn xay','Gừng','Hành lá','Nước dùng'], desc:'Hoành thánh nước trong veo với nhân tôm thịt.' },
+    { id:'sweet_sour_pork', nameVi:'Thịt Heo Chua Ngọt', nameEn:'Sweet & Sour Pork', cuisine:'chinese', meal:['lunch','dinner'], spice:0, time:'25p', price:2, tags:['pork','oily','onions','garlic'], ingredients:['Thịt lợn','Thơm','Ớt chuông','Hành tây','Sốt chua ngọt','Bột chiên'], desc:'Thịt heo chiên giòn sốt chua ngọt đậm đà.' },
+    { id:'congee', nameVi:'Cháo Thịt Bằm', nameEn:'Chinese Rice Porridge', cuisine:'chinese', meal:['breakfast'], spice:0, time:'25p', price:1, tags:['pork','garlic','soy_sauce'], ingredients:['Gạo','Thịt lợn bằm','Trứng bắc thảo','Gừng','Hành phi','Quẩy'], desc:'Cháo trắng Quảng Đông mềm mịn với thịt bằm và trứng bắc thảo.' },
+    { id:'dan_dan_noodles', nameVi:'Mì Đảm Đảm', nameEn:'Dan Dan Noodles', cuisine:'chinese', meal:['lunch','dinner'], spice:3, time:'20p', price:1, tags:['spicy','pork','garlic','soy_sauce'], ingredients:['Mì trứng','Thịt lợn xay','Tương ớt','Tỏi','Mè','Hành lá','Giấm'], desc:'Mì Dan Dan Tứ Xuyên cay tê nức mũi.' },
+
+    // ═══════════════════════════════════
+    // THAI (8 dishes)
+    // ═══════════════════════════════════
+    { id:'pad_thai', nameVi:'Pad Thái', nameEn:'Pad Thai Noodles', cuisine:'thai', meal:['lunch','dinner'], spice:1, time:'20p', price:2, tags:['fish_sauce','garlic','onions'], ingredients:['Phở xào','Tôm','Đậu phụ','Giá đỗ','Đậu phộng','Nước mắm Thái'], desc:'Phở xào Thái Lan với tôm và đậu phộng rang.' },
+    { id:'tom_yum', nameVi:'Tom Yum Kung', nameEn:'Spicy Shrimp Soup', cuisine:'thai', meal:['dinner'], spice:3, time:'25p', price:2, tags:['spicy','fresh_seafood','fish_sauce','cilantro'], ingredients:['Tôm','Nấm','Sả','Lá chanh','Ớt','Nước cốt chanh'], desc:'Canh tom yum chua cay nổi tiếng Thái Lan.' },
+    { id:'green_curry', nameVi:'Cà Ri Xanh Thái', nameEn:'Thai Green Curry', cuisine:'thai', meal:['dinner'], spice:2, time:'25p', price:2, tags:['spicy','garlic','cilantro'], ingredients:['Nước cốt dừa','Paste cà ri xanh','Thịt gà','Cà tím Thái','Lá basil Thái'], desc:'Cà ri xanh nước cốt dừa thơm béo.' },
+    { id:'massaman_curry', nameVi:'Cà Ri Massaman Bò', nameEn:'Massaman Beef Curry', cuisine:'thai', meal:['dinner'], spice:1, time:'45p', price:2, tags:['spicy','garlic','onions'], ingredients:['Thịt bò','Nước cốt dừa','Khoai tây','Đậu phộng','Paste massaman','Lá nguyệt quế'], desc:'Massaman curry bò hầm mềm với đậu phộng, ít cay, đậm đà.' },
+    { id:'som_tam', nameVi:'Gỏi Đu Đủ Xanh', nameEn:'Green Papaya Salad', cuisine:'thai', meal:['lunch','dinner'], spice:3, time:'10p', price:1, tags:['spicy','fish_sauce','garlic','vegetables'], ingredients:['Đu đủ xanh','Cà chua','Đậu que','Đậu phộng','Ớt','Nước mắm','Chanh'], desc:'Som tam gỏi đu đủ cay nồng đặc trưng Thái Lan.' },
+    { id:'mango_sticky', nameVi:'Xôi Xoài', nameEn:'Mango Sticky Rice', cuisine:'thai', meal:['lunch','dinner'], spice:0, time:'15p', price:1, tags:[], ingredients:['Gạo nếp','Xoài chín','Nước cốt dừa','Đường','Muối','Mè rang'], desc:'Xôi xoài Thái Lan ngọt béo nước cốt dừa.' },
+    { id:'khao_soi', nameVi:'Mì Cà Ri Khao Soi', nameEn:'Khao Soi Curry Noodles', cuisine:'thai', meal:['lunch','dinner'], spice:2, time:'25p', price:2, tags:['spicy','garlic','onions'], ingredients:['Mì trứng','Nước cốt dừa','Paste cà ri','Đùi gà','Hành tím','Mì chiên giòn'], desc:'Khao Soi mì cà ri Chiang Mai với sợi mì chiên giòn bên trên.' },
+    { id:'basil_chicken', nameVi:'Gà Xào Húng Quế', nameEn:'Thai Basil Chicken', cuisine:'thai', meal:['lunch','dinner'], spice:2, time:'15p', price:1, tags:['spicy','garlic','fish_sauce'], ingredients:['Thịt gà xay','Húng quế Thái','Ớt','Tỏi','Nước mắm','Trứng ốp la'], desc:'Pad krapao gà xào húng quế cay, ăn kèm cơm và trứng ốp la.' },
+
+    // ═══════════════════════════════════
+    // WESTERN COMFORT (12 dishes)
+    // ═══════════════════════════════════
+    { id:'mac_cheese', nameVi:'Mì Phô Mai Mac & Cheese', nameEn:'Mac & Cheese', cuisine:'western', meal:['lunch','dinner'], spice:0, time:'20p', price:2, tags:['cheese','mac_cheese','creamy'], ingredients:['Nui','Phô mai cheddar','Bơ','Sữa','Bột mì'], desc:'Mac & cheese béo ngậy kiểu Mỹ, món yêu thích của con gái.' },
+    { id:'burger', nameVi:'Hamburger Bò Phô Mai', nameEn:'Cheeseburger', cuisine:'western', meal:['lunch','dinner'], spice:0, time:'15p', price:2, tags:['burgers','cheese','onions'], ingredients:['Patty bò','Bánh burger','Phô mai cheddar','Rau diếp','Cà chua','Sốt'], desc:'Burger bò juicy với phô mai tan chảy.' },
+    { id:'grilled_cheese', nameVi:'Sandwich Phô Mai Nướng', nameEn:'Grilled Cheese Sandwich', cuisine:'western', meal:['breakfast','lunch'], spice:0, time:'10p', price:1, tags:['cheese','sandwiches'], ingredients:['Bánh mì gối','Phô mai cheddar','Phô mai mozzarella','Bơ'], desc:'Sandwich phô mai nướng giòn đơn giản mà ngon.' },
+    { id:'pancake', nameVi:'Bánh Pancake', nameEn:'Fluffy Pancakes', cuisine:'western', meal:['breakfast'], spice:0, time:'15p', price:1, tags:[], ingredients:['Bột mì','Trứng','Sữa','Bơ','Mật ong','Trái cây'], desc:'Pancake xốp mềm ăn kèm mật ong và bơ.' },
+    { id:'fish_chips', nameVi:'Cá Chiên & Khoai Tây', nameEn:'Fish & Chips', cuisine:'western', meal:['lunch','dinner'], spice:0, time:'20p', price:2, tags:['fresh_seafood','oily','french_fries'], ingredients:['Cá tuyết','Bột chiên','Khoai tây','Sốt tartar','Chanh'], desc:'Fish & Chips kiểu Anh giòn rụm.' },
+    { id:'chicken_nuggets', nameVi:'Gà Viên Chiên', nameEn:'Chicken Nuggets', cuisine:'western', meal:['lunch','dinner'], spice:0, time:'15p', price:1, tags:['oily','french_fries'], ingredients:['Ức gà','Bột chiên','Sốt BBQ','Khoai tây chiên','Ketchup'], desc:'Gà viên chiên giòn vàng kèm khoai tây chiên.' },
+    { id:'caesar_salad', nameVi:'Salad Caesar Gà Nướng', nameEn:'Caesar Salad with Grilled Chicken', cuisine:'western', meal:['lunch'], spice:0, time:'15p', price:2, tags:['cheese','vegetables'], ingredients:['Rau romaine','Ức gà nướng','Bánh mì nướng','Phô mai parmesan','Sốt Caesar'], desc:'Salad Caesar kinh điển với gà nướng và crouton giòn.' },
+    { id:'club_sandwich', nameVi:'Club Sandwich', nameEn:'Club Sandwich', cuisine:'western', meal:['breakfast','lunch'], spice:0, time:'10p', price:2, tags:['sandwiches','pork'], ingredients:['Bánh mì gối nướng','Thịt gà','Thịt xông khói','Trứng','Rau diếp','Cà chua'], desc:'Club sandwich 3 tầng đầy đặn kiểu khách sạn.' },
+    { id:'steak', nameVi:'Bò Bít Tết', nameEn:'Grilled Steak', cuisine:'western', meal:['dinner'], spice:0, time:'20p', price:3, tags:['garlic'], ingredients:['Thịt bò ribeye','Bơ tỏi','Rosemary','Khoai tây nghiền','Rau trộn'], desc:'Steak bò ribeye áp chảo medium-rare với bơ tỏi.' },
+    { id:'scrambled_eggs', nameVi:'Trứng Bác Kiểu Pháp', nameEn:'Scrambled Eggs on Toast', cuisine:'western', meal:['breakfast'], spice:0, time:'10p', price:1, tags:['cheese'], ingredients:['Trứng','Bơ','Kem tươi','Bánh mì nướng','Hành lá','Tiêu'], desc:'Trứng bác mềm mịn kiểu Pháp trên bánh mì nướng.' },
+    { id:'waffle', nameVi:'Bánh Waffle', nameEn:'Belgian Waffles', cuisine:'western', meal:['breakfast'], spice:0, time:'15p', price:1, tags:[], ingredients:['Bột mì','Trứng','Sữa','Bơ','Đường','Kem tươi','Trái cây'], desc:'Waffle Bỉ giòn ngoài mềm trong kèm kem tươi.' },
+    { id:'pasta_pesto', nameVi:'Mì Pesto Xanh', nameEn:'Pesto Pasta', cuisine:'western', meal:['lunch','dinner'], spice:0, time:'15p', price:2, tags:['cheese','garlic'], ingredients:['Penne','Sốt pesto basil','Phô mai parmesan','Hạt thông','Dầu ô liu'], desc:'Mì pesto xanh thơm lừng basil và phô mai parmesan.' },
+
+    // ═══════════════════════════════════
+    // STREET FOOD (12 dishes)
+    // ═══════════════════════════════════
+    { id:'banh_mi', nameVi:'Bánh Mì Thịt', nameEn:'Vietnamese Baguette Sandwich', cuisine:'street', meal:['breakfast','lunch'], spice:1, time:'5p', price:1, tags:['sandwiches','pork','cilantro','vegetables'], ingredients:['Bánh mì','Pate','Thịt nguội','Rau mùi','Đồ chua'], desc:'Bánh mì Việt Nam nổi tiếng thế giới.' },
+    { id:'xoi', nameVi:'Xôi Xéo', nameEn:'Sticky Rice with Mung Bean', cuisine:'street', meal:['breakfast'], spice:0, time:'5p', price:1, tags:[], ingredients:['Gạo nếp','Đậu xanh','Hành phi','Mỡ hành'], desc:'Xôi xéo buổi sáng Hà Nội kinh điển.' },
+    { id:'banh_cuon', nameVi:'Bánh Cuốn Thanh Trì', nameEn:'Steamed Rice Rolls', cuisine:'street', meal:['breakfast'], spice:0, time:'10p', price:1, tags:['pork','fish_sauce'], ingredients:['Bột gạo','Thịt lợn xay','Mộc nhĩ','Hành phi','Nước mắm'], desc:'Bánh cuốn mỏng tang truyền thống Hà Nội.' },
+    { id:'bun_dau', nameVi:'Bún Đậu Mắm Tôm', nameEn:'Noodles with Tofu & Shrimp Paste', cuisine:'street', meal:['lunch','dinner'], spice:1, time:'15p', price:1, tags:['fried_tofu','fish_sauce'], ingredients:['Bún','Đậu phụ chiên','Mắm tôm','Chả cốm','Rau sống'], desc:'Bún đậu mắm tôm đúng chất Hà Nội.' },
+    { id:'banh_xeo', nameVi:'Bánh Xèo', nameEn:'Crispy Vietnamese Pancake', cuisine:'street', meal:['lunch','dinner'], spice:0, time:'20p', price:1, tags:['pork','oily','onions'], ingredients:['Bột gạo','Nghệ','Tôm','Thịt lợn','Giá đỗ','Rau sống'], desc:'Bánh xèo giòn rụm nhân tôm thịt.' },
+    { id:'pho_cuon', nameVi:'Phở Cuốn', nameEn:'Rolled Pho Noodle Sheets', cuisine:'street', meal:['lunch'], spice:0, time:'10p', price:1, tags:['vegetables','fish_sauce'], ingredients:['Bánh phở tươi','Thịt bò xào','Rau sống','Nước chấm'], desc:'Phở cuốn thanh nhẹ, món ăn nhẹ kiểu Hà Nội.' },
+    { id:'kem_trang_tien', nameVi:'Kem Tràng Tiền', nameEn:'Trang Tien Ice Cream', cuisine:'street', meal:['lunch','dinner'], spice:0, time:'2p', price:1, tags:[], ingredients:['Kem đậu xanh','Kem sô cô la','Kem dừa'], desc:'Kem que huyền thoại Hà Nội từ 1958.' },
+    { id:'banh_gio', nameVi:'Bánh Giò', nameEn:'Pyramid Rice Cake', cuisine:'street', meal:['breakfast'], spice:0, time:'5p', price:1, tags:['pork'], ingredients:['Bột gạo','Thịt lợn xay','Mộc nhĩ','Hành','Tiêu'], desc:'Bánh giò nóng hổi buổi sáng, vỏ mềm nhân thịt thơm.' },
+    { id:'bun_oc', nameVi:'Bún Ốc', nameEn:'Snail Noodle Soup', cuisine:'street', meal:['lunch','dinner'], spice:1, time:'20p', price:1, tags:['fresh_seafood','fish_sauce','onions','garlic'], ingredients:['Bún','Ốc','Cà chua','Đậu phụ chiên','Tía tô','Giấm bỗng'], desc:'Bún ốc nóng hổi chua dịu, đặc sản vỉa hè Hà Nội.' },
+    { id:'banh_ran', nameVi:'Bánh Rán Mặn/Ngọt', nameEn:'Fried Sesame Balls', cuisine:'street', meal:['breakfast','lunch'], spice:0, time:'5p', price:1, tags:['oily'], ingredients:['Bột nếp','Đậu xanh','Mè','Thịt lợn (mặn)','Đường (ngọt)'], desc:'Bánh rán vàng giòn phủ mè, nhân đậu xanh hoặc thịt.' },
+    { id:'nem_chua_ran', nameVi:'Nem Chua Rán', nameEn:'Fried Fermented Pork Rolls', cuisine:'street', meal:['lunch','dinner'], spice:1, time:'10p', price:1, tags:['pork','oily','garlic'], ingredients:['Nem chua','Bột chiên','Tương ớt','Rau sống','Nước chấm'], desc:'Nem chua rán giòn rụm, món nhậu vỉa hè nổi tiếng.' },
+    { id:'che', nameVi:'Chè Thập Cẩm', nameEn:'Vietnamese Sweet Soup', cuisine:'street', meal:['lunch','dinner'], spice:0, time:'5p', price:1, tags:[], ingredients:['Đậu xanh','Thạch','Nước cốt dừa','Đá bào','Hạt sen','Nhãn'], desc:'Chè thập cẩm mát lạnh với đủ loại topping.' },
+
+    // ═══════════════════════════════════
+    // PIZZA 4P'S (24 dishes)
+    // ═══════════════════════════════════
+    // --- Pizza 4P's: Pizzas ---
+    { id:'p4p_margherita', nameVi:'Pizza Margherita (4P\'s)', nameEn:'Margherita Pizza', cuisine:'italian', meal:['lunch','dinner'], spice:0, time:'15p', price:2, tags:['pizza','cheese'], ingredients:['Bột pizza','Sốt cà chua','Mozzarella tự làm','Húng quế'], desc:'Pizza 4P\'s kinh điển với phô mai mozzarella tự làm.' },
+    { id:'p4p_parma', nameVi:'Pizza Parma Ham (4P\'s)', nameEn:'Extra Parma Ham Margherita', cuisine:'italian', meal:['lunch','dinner'], spice:0, time:'15p', price:3, tags:['pizza','cheese','pork'], ingredients:['Bột pizza','Parma ham','Mozzarella','Rocket','Cà chua'], desc:'Pizza Margherita phủ Parma ham Ý cao cấp.' },
+    { id:'p4p_burrata_parma', nameVi:'Pizza Burrata Parma Ham (4P\'s)', nameEn:'Burrata Parma Ham Margherita', cuisine:'italian', meal:['lunch','dinner'], spice:0, time:'15p', price:3, tags:['pizza','cheese','pork'], ingredients:['Bột pizza','Burrata','Parma ham','Sốt cà chua','Húng quế'], desc:'Pizza đặc biệt với phô mai Burrata tan chảy và Parma ham.' },
+    { id:'p4p_4cheese', nameVi:'Pizza 4 Phô Mai (4P\'s)', nameEn:'House-made 4 Cheese Pizza', cuisine:'italian', meal:['lunch','dinner'], spice:0, time:'15p', price:2, tags:['pizza','cheese','creamy'], ingredients:['Bột pizza','Mozzarella','Gorgonzola','Ricotta','Parmesan'], desc:'Pizza 4 loại phô mai tự làm đặc trưng 4P\'s.' },
+    { id:'p4p_5cheese', nameVi:'Pizza 5 Phô Mai (4P\'s)', nameEn:'House-made 5 Cheese Pizza', cuisine:'italian', meal:['lunch','dinner'], spice:0, time:'15p', price:3, tags:['pizza','cheese','creamy'], ingredients:['Bột pizza','Mozzarella','Gorgonzola','Ricotta','Parmesan','Camembert'], desc:'Pizza 5 loại phô mai thượng hạng, phiên bản đặc biệt.' },
+    { id:'p4p_salmon_sashimi', nameVi:'Pizza Cá Hồi Sashimi (4P\'s)', nameEn:'Salmon Sashimi Pizza', cuisine:'italian', meal:['lunch','dinner'], spice:0, time:'15p', price:3, tags:['pizza','cheese','raw_seafood'], ingredients:['Bột pizza','Cá hồi sashimi','Ricotta','Hành tây','Sốt kem'], desc:'Pizza fusion với cá hồi sashimi tươi và sốt ricotta.' },
+    { id:'p4p_salmon_miso', nameVi:'Pizza Cá Hồi Miso (4P\'s)', nameEn:'Salmon Miso Cream Pizza', cuisine:'italian', meal:['lunch','dinner'], spice:0, time:'15p', price:3, tags:['pizza','cheese','fresh_seafood'], ingredients:['Bột pizza','Cá hồi','Sốt miso kem','Mozzarella','Hành lá'], desc:'Pizza fusion Nhật-Ý với sốt miso kem béo ngậy.' },
+    { id:'p4p_shrimp', nameVi:'Pizza Tôm Mayonnaise (4P\'s)', nameEn:'Shrimp Mayonnaise Pizza', cuisine:'italian', meal:['lunch','dinner'], spice:0, time:'15p', price:2, tags:['pizza','cheese','fresh_seafood'], ingredients:['Bột pizza','Tôm','Mayonnaise','Mozzarella','Ngô ngọt'], desc:'Pizza tôm mayonnaise kiểu Nhật, trẻ em rất thích.' },
+    { id:'p4p_spicy_shrimp', nameVi:'Pizza Tôm Cay (4P\'s)', nameEn:'Spicy Garlic Shrimp Pizza', cuisine:'italian', meal:['lunch','dinner'], spice:2, time:'15p', price:2, tags:['pizza','cheese','fresh_seafood','spicy','garlic'], ingredients:['Bột pizza','Tôm','Tỏi','Ớt','Mozzarella','Dầu ô liu'], desc:'Pizza tôm tỏi cay thơm lừng kiểu aglio olio.' },
+    { id:'p4p_scallop', nameVi:'Pizza Sò Điệp Hokkaido (4P\'s)', nameEn:'Hokkaido Scallops Sweet Miso Gratin', cuisine:'italian', meal:['dinner'], spice:0, time:'20p', price:3, tags:['pizza','cheese','fresh_seafood','creamy'], ingredients:['Bột pizza','Sò điệp Hokkaido','Sốt miso ngọt','Phô mai gratin','Bơ'], desc:'Pizza sò điệp Hokkaido với sốt miso ngọt gratin — món cao cấp nhất 4P\'s.' },
+    { id:'p4p_teriyaki', nameVi:'Pizza Gà Teriyaki (4P\'s)', nameEn:'Teriyaki Chicken Pizza', cuisine:'italian', meal:['lunch','dinner'], spice:0, time:'15p', price:2, tags:['pizza','cheese','soy_sauce'], ingredients:['Bột pizza','Thịt gà','Sốt teriyaki','Mozzarella','Hành tây','Nori'], desc:'Pizza gà teriyaki phong cách Nhật Bản.' },
+    { id:'p4p_bo_kho', nameVi:'Pizza Bò Kho (4P\'s)', nameEn:'Bo Kho Pizza', cuisine:'italian', meal:['lunch','dinner'], spice:1, time:'15p', price:2, tags:['pizza','cheese','pork'], ingredients:['Bột pizza','Thịt bò kho','Mozzarella','Cà rốt','Sả'], desc:'Pizza fusion Việt-Ý với bò kho kiểu Việt Nam.' },
+    { id:'p4p_beef_kebab', nameVi:'Pizza Bò Kebab Cay (4P\'s)', nameEn:'Spicy Beef Kebab Pizza', cuisine:'italian', meal:['lunch','dinner'], spice:2, time:'15p', price:3, tags:['pizza','cheese','spicy'], ingredients:['Bột pizza','Thịt bò kebab','Sốt cay','Mozzarella','Hành tây','Ớt'], desc:'Pizza bò kebab cay nồng kiểu Trung Đông.' },
+    { id:'p4p_mushroom', nameVi:'Pizza 4 Nấm (4P\'s)', nameEn:'4 Mushroom Pizza', cuisine:'italian', meal:['lunch','dinner'], spice:0, time:'15p', price:2, tags:['pizza','cheese','vegetables'], ingredients:['Bột pizza','Nấm hương','Nấm đùi gà','Nấm kim châm','Nấm sò','Mozzarella'], desc:'Pizza chay 4 loại nấm thơm lừng.' },
+    // --- Pizza 4P's: Pasta ---
+    { id:'p4p_carbonara', nameVi:'Mì Carbonara (4P\'s)', nameEn:'Cage-free Egg Creamy Carbonara', cuisine:'italian', meal:['lunch','dinner'], spice:0, time:'15p', price:2, tags:['cheese','creamy','pork'], ingredients:['Spaghetti','Trứng gà thả vườn','Pancetta','Parmesan','Tiêu đen'], desc:'Carbonara kem trứng gà thả vườn béo ngậy kiểu La Mã.' },
+    { id:'p4p_bolognese', nameVi:'Mì Bolognese Burrata (4P\'s)', nameEn:'Bolognese Spaghetti with Smoked Burrata', cuisine:'italian', meal:['lunch','dinner'], spice:0, time:'20p', price:2, tags:['cheese','pork'], ingredients:['Spaghetti','Sốt bolognese','Burrata hun khói','Parmesan','Húng quế'], desc:'Spaghetti bolognese đậm đà với Burrata hun khói tự làm.' },
+    { id:'p4p_clam_pasta', nameVi:'Mì Nghêu Húng Quế (4P\'s)', nameEn:'Clam & Basil Sauce Spaghetti', cuisine:'italian', meal:['lunch','dinner'], spice:0, time:'15p', price:2, tags:['fresh_seafood','garlic'], ingredients:['Spaghetti','Nghêu','Húng quế','Tỏi','Rượu trắng','Dầu ô liu'], desc:'Spaghetti vongole tươi mát với nghêu và húng quế.' },
+    { id:'p4p_salmon_fettuccine', nameVi:'Fettuccine Cá Hồi Kem (4P\'s)', nameEn:'Salmon Cream House-made Fettuccine', cuisine:'italian', meal:['lunch','dinner'], spice:0, time:'15p', price:2, tags:['fresh_seafood','cheese','creamy'], ingredients:['Fettuccine tự làm','Cá hồi','Sốt kem','Parmesan','Thì là'], desc:'Fettuccine tự làm với sốt kem cá hồi mềm mịn.' },
+    { id:'p4p_crab_pasta', nameVi:'Mì Cua Sốt Kem Cà Chua (4P\'s)', nameEn:'Crab Tomato Cream Spaghetti', cuisine:'italian', meal:['lunch','dinner'], spice:0, time:'20p', price:3, tags:['fresh_seafood','cheese','creamy'], ingredients:['Spaghetti','Cua','Sốt kem cà chua','Ricotta','Húng quế'], desc:'Spaghetti cua sốt kem cà chua với Ricotta tự làm.' },
+    { id:'p4p_squid_risotto', nameVi:'Risotto Mực (4P\'s)', nameEn:'Squid Ink Risotto', cuisine:'italian', meal:['lunch','dinner'], spice:0, time:'25p', price:2, tags:['fresh_seafood','cheese'], ingredients:['Gạo Arborio','Mực','Mực ink','Cà chua khô','Aioli tự làm'], desc:'Risotto mực đen đặc biệt với sốt aioli tự làm.' },
+    { id:'p4p_lasagna', nameVi:'Lasagna Nướng (4P\'s)', nameEn:'Baked Lasagna with Mozzarella', cuisine:'italian', meal:['lunch','dinner'], spice:0, time:'25p', price:2, tags:['cheese','pork','creamy'], ingredients:['Lá lasagna','Sốt bolognese','Béchamel','Mozzarella tự làm','Parmesan'], desc:'Lasagna nướng lớp lớp với Mozzarella tự làm tan chảy.' },
+    // --- Pizza 4P's: Appetizers ---
+    { id:'p4p_burrata_salad', nameVi:'Salad Burrata Rocket (4P\'s)', nameEn:'Burrata with Rocket & Tomato Salad', cuisine:'italian', meal:['lunch','dinner'], spice:0, time:'10p', price:2, tags:['cheese','vegetables'], ingredients:['Burrata tự làm','Rocket organic','Cà chua','Dầu ô liu','Balsamic'], desc:'Salad Burrata tươi mát với rocket organic và cà chua.' },
+    { id:'p4p_fondue', nameVi:'Lẩu Phô Mai Fondue (4P\'s)', nameEn:'4P\'s Cheese Fondue', cuisine:'italian', meal:['dinner'], spice:0, time:'15p', price:2, tags:['cheese','creamy','hotpot'], ingredients:['Phô mai hỗn hợp','Rượu trắng','Bánh mì','Rau củ','Xúc xích'], desc:'Fondue phô mai kiểu Thụy Sĩ — nhúng bánh mì và rau củ.' },
+    // --- Pizza 4P's: Desserts ---
+    { id:'p4p_tiramisu', nameVi:'Tiramisu (4P\'s)', nameEn:'4P\'s Creamy Tiramisu', cuisine:'italian', meal:['lunch','dinner'], spice:0, time:'5p', price:2, tags:['cheese','creamy'], ingredients:['Mascarpone tự làm','Ladyfinger','Cà phê espresso','Cacao','Rượu Marsala'], desc:'Tiramisu với Mascarpone tự làm mềm mịn, đậm vị cà phê.' },
+    { id:'p4p_fondant', nameVi:'Bánh Chocolate Fondant (4P\'s)', nameEn:'Fondant Chocolate Cake', cuisine:'italian', meal:['lunch','dinner'], spice:0, time:'15p', price:2, tags:['creamy'], ingredients:['Chocolate đen Việt Nam','Bơ','Trứng','Bột mì','Kem vanilla tự làm'], desc:'Bánh chocolate fondant lava với kem vanilla tự làm.' },
+    // --- Naco Taco ---
+    { id:'naco_pastor_chay', nameVi:'Taco Pastor Chay (Naco)', nameEn:'Vegan Pastor Taco', cuisine:'mexican', meal:['lunch','dinner'], spice:1, time:'15p', price:1, tags:['vegetables'], ingredients:['Vỏ taco','Nấm','Dứa','Hành tây','Rau mùi','Sốt salsa verde'], desc:'Taco chay kiểu pastor với nấm và dứa nướng.' },
+    { id:'naco_ga_chipotle', nameVi:'Taco Gà Xé Chipotle (Naco)', nameEn:'Chipotle Chicken Taco', cuisine:'mexican', meal:['lunch','dinner'], spice:2, time:'15p', price:1, tags:['spicy','onions','cilantro'], ingredients:['Vỏ taco','Gà xé','Sốt chipotle','Hành tây','Rau mùi','Kem chua'], desc:'Taco gà xé với sốt chipotle cay thơm.' },
+    { id:'naco_ga_pastor', nameVi:'Taco Gà Nướng Pastor (Naco)', nameEn:'Pastor Grilled Chicken Taco', cuisine:'mexican', meal:['lunch','dinner'], spice:1, time:'15p', price:1, tags:['onions','cilantro'], ingredients:['Vỏ taco','Gà nướng','Dứa','Hành tây','Rau mùi','Sốt pastor'], desc:'Taco gà nướng kiểu pastor với dứa tươi.' },
+    { id:'naco_heo_carnitas', nameVi:'Taco Heo Carnitas (Naco)', nameEn:'Pork Carnitas Taco', cuisine:'mexican', meal:['lunch','dinner'], spice:0, time:'15p', price:1, tags:['pork','onions','cilantro'], ingredients:['Vỏ taco','Heo carnitas','Hành tây','Rau mùi','Chanh','Sốt salsa'], desc:'Taco heo carnitas ninh mềm tan trong miệng.' },
+    { id:'naco_heo_pastor', nameVi:'Taco Heo Pastor (Naco)', nameEn:'Pork Pastor Taco', cuisine:'mexican', meal:['lunch','dinner'], spice:1, time:'15p', price:1, tags:['pork','onions','cilantro'], ingredients:['Vỏ taco','Heo pastor','Dứa','Hành tây','Rau mùi','Sốt pastor'], desc:'Taco heo pastor truyền thống Mexico.' },
+    { id:'naco_ca_baja', nameVi:'Taco Cá Baja (Naco)', nameEn:'Baja Fish Taco', cuisine:'mexican', meal:['lunch','dinner'], spice:0, time:'15p', price:1, tags:['fresh_seafood','onions'], ingredients:['Vỏ taco','Cá chiên giòn','Bắp cải','Sốt chipotle mayo','Chanh','Rau mùi'], desc:'Taco cá chiên giòn kiểu Baja California.' },
+    { id:'naco_bach_tuoc', nameVi:'Taco Bạch Tuộc Nướng (Naco)', nameEn:'Grilled Octopus Taco', cuisine:'mexican', meal:['lunch','dinner'], spice:1, time:'25p', price:3, tags:['fresh_seafood','garlic'], ingredients:['Vỏ taco','Bạch tuộc nướng','Guacamole','Sốt chimichurri','Ớt','Chanh'], desc:'Taco bạch tuộc nướng cao cấp — món đoạt giải.' },
+    { id:'naco_gov_taco', nameVi:'GOV Taco (Naco)', nameEn:'GOV Taco', cuisine:'mexican', meal:['lunch','dinner'], spice:2, time:'20p', price:3, tags:['spicy'], ingredients:['Vỏ taco','Thịt bò','Guacamole','Sốt đặc biệt','Hành tây caramel','Jalapeño'], desc:'Taco đặc biệt GOV — món signature của Naco Taco.' },
+    { id:'naco_bo_nuong', nameVi:'Taco Thăn Bò Nướng (Naco)', nameEn:'Grilled Beef Tenderloin Taco', cuisine:'mexican', meal:['lunch','dinner'], spice:1, time:'20p', price:3, tags:['spicy'], ingredients:['Vỏ taco','Thăn bò nướng','Hành tây','Rau mùi','Sốt chimichurri','Chanh'], desc:'Taco thăn bò nướng mềm juicy.' },
+    { id:'naco_tom_pho_mai', nameVi:'Taco Tôm Nướng Phô Mai (Naco)', nameEn:'Grilled Shrimp Cheese Taco', cuisine:'mexican', meal:['lunch','dinner'], spice:0, time:'20p', price:3, tags:['fresh_seafood','cheese'], ingredients:['Vỏ taco','Tôm nướng','Phô mai','Bắp cải','Sốt kem','Chanh'], desc:'Taco tôm nướng phủ phô mai tan chảy.' },
+    { id:'naco_quesadilla', nameVi:'Super Quesadilla (Naco)', nameEn:'Super Quesadilla', cuisine:'mexican', meal:['lunch','dinner'], spice:0, time:'15p', price:2, tags:['cheese'], ingredients:['Tortilla bột mì','Phô mai','Thịt bò/gà','Ớt chuông','Hành tây','Kem chua'], desc:'Quesadilla phô mai kéo sợi nhân thịt đầy đặn.' },
+    { id:'naco_nachos', nameVi:'Nachos (Naco)', nameEn:'Loaded Nachos', cuisine:'mexican', meal:['lunch','dinner'], spice:1, time:'15p', price:2, tags:['cheese','spicy'], ingredients:['Tortilla chips','Phô mai','Guacamole','Salsa','Jalapeño','Kem chua'], desc:'Nachos phủ phô mai, guacamole và salsa tươi.' },
+    { id:'naco_birria', nameVi:'Birria (Naco)', nameEn:'Birria Tacos', cuisine:'mexican', meal:['lunch','dinner'], spice:2, time:'30p', price:3, tags:['spicy','pork'], ingredients:['Vỏ taco','Thịt bò hầm birria','Nước dùng consommé','Phô mai','Hành tây','Rau mùi'], desc:'Taco birria hầm mềm chấm nước dùng consommé đậm đà.' },
+    { id:'naco_campechano', nameVi:'Campechano (Naco)', nameEn:'Campechano Taco', cuisine:'mexican', meal:['lunch','dinner'], spice:1, time:'15p', price:2, tags:['pork'], ingredients:['Vỏ taco','Thịt bò','Chorizo','Hành tây','Rau mùi','Sốt salsa'], desc:'Taco campechano phối thịt bò và chorizo.' },
+    { id:'naco_flan', nameVi:'Bánh Flan Mexico (Naco)', nameEn:'Mexican Flan', cuisine:'mexican', meal:['lunch','dinner'], spice:0, time:'10p', price:1, tags:['creamy'], ingredients:['Trứng','Sữa đặc','Caramel','Vanilla','Quế'], desc:'Bánh flan kiểu Mexico mềm mịn với caramel.' },
+    { id:'naco_churros', nameVi:'Churros (Naco)', nameEn:'Churros with Chocolate', cuisine:'mexican', meal:['lunch','dinner'], spice:0, time:'10p', price:1, tags:['creamy'], ingredients:['Bột churros','Đường quế','Sốt chocolate','Sốt caramel','Kem'], desc:'Churros giòn rụm phủ đường quế, chấm sốt chocolate.' },
+    // --- Vietnamese Specialties (Klook) ---
+    { id:'mi_quang', nameVi:'Mì Quảng', nameEn:'Quang Noodles', cuisine:'vietnamese', meal:['breakfast','lunch'], spice:0, time:'30p', price:1, tags:['onions'], ingredients:['Mì Quảng','Tôm','Thịt heo','Trứng cút','Đậu phộng','Rau sống','Bánh tráng'], desc:'Mì Quảng Đà Nẵng nước ít, đậm đà với tôm thịt.' },
+    { id:'cao_lau', nameVi:'Cao Lầu', nameEn:'Cao Lau Noodles', cuisine:'vietnamese', meal:['breakfast','lunch'], spice:0, time:'30p', price:1, tags:[], ingredients:['Mì cao lầu','Thịt heo xá xíu','Rau sống','Giá đỗ','Bánh đa','Nước lèo'], desc:'Cao Lầu Hội An — mì dai đặc trưng chỉ có ở phố cổ.' },
+    { id:'banh_can', nameVi:'Bánh Căn', nameEn:'Mini Rice Pancakes', cuisine:'vietnamese', meal:['breakfast','lunch'], spice:0, time:'20p', price:1, tags:['street'], ingredients:['Bột gạo','Trứng cút','Hành lá','Nước mắm chua ngọt','Mỡ hành'], desc:'Bánh căn Nha Trang nướng khuôn đất, giòn rụm.' },
+    { id:'banh_beo', nameVi:'Bánh Bèo Huế', nameEn:'Hue Water Fern Cakes', cuisine:'vietnamese', meal:['breakfast','lunch'], spice:0, time:'15p', price:1, tags:['street'], ingredients:['Bột gạo','Tôm chấy','Tóp mỡ','Hành phi','Nước mắm'], desc:'Bánh bèo chén Huế — mỏng mềm với tôm chấy và tóp mỡ.' },
+    { id:'banh_canh_he', nameVi:'Bánh Canh Hẹ', nameEn:'Chives Thick Noodle Soup', cuisine:'vietnamese', meal:['breakfast','lunch'], spice:0, time:'25p', price:1, tags:[], ingredients:['Bánh canh','Hẹ','Tôm','Chả cá','Nước dùng','Hành phi'], desc:'Bánh canh hẹ Phú Yên — sợi dai, nước dùng ngọt thanh.' },
+    { id:'hu_tieu_my_tho', nameVi:'Hủ Tiếu Mỹ Tho', nameEn:'My Tho Noodle Soup', cuisine:'vietnamese', meal:['breakfast','lunch'], spice:0, time:'30p', price:1, tags:['fresh_seafood'], ingredients:['Hủ tiếu','Tôm','Thịt heo','Gan','Giá đỗ','Nước lèo xương'], desc:'Hủ tiếu Mỹ Tho nước trong, ngọt xương heo.' },
+    { id:'banh_khot', nameVi:'Bánh Khọt', nameEn:'Mini Crispy Pancakes', cuisine:'vietnamese', meal:['breakfast','lunch'], spice:0, time:'20p', price:1, tags:['street','fresh_seafood'], ingredients:['Bột gạo','Bột nghệ','Tôm','Hành lá','Nước mắm chua ngọt','Rau sống'], desc:'Bánh khọt Vũng Tàu giòn vàng với tôm tươi.' },
+    { id:'bun_quay', nameVi:'Bún Quậy Phú Quốc', nameEn:'Phu Quoc Stirred Noodles', cuisine:'vietnamese', meal:['breakfast'], spice:0, time:'20p', price:1, tags:['fresh_seafood'], ingredients:['Bún tươi','Chả cá','Tôm','Sứa','Nước dùng','Hành phi'], desc:'Bún quậy Phú Quốc — bún tươi quậy với hải sản.' },
+    { id:'banh_da_cua', nameVi:'Bánh Đa Cua Hải Phòng', nameEn:'Hai Phong Crab Noodle Soup', cuisine:'vietnamese', meal:['breakfast','lunch'], spice:0, time:'30p', price:1, tags:['fresh_seafood'], ingredients:['Bánh đa đỏ','Cua đồng','Rau muống','Chả lá lốt','Hành phi','Nước dùng cua'], desc:'Bánh đa cua Hải Phòng — sợi bánh đa đỏ dai, nước cua đậm.' },
+    { id:'cha_muc_ha_long', nameVi:'Chả Mực Hạ Long', nameEn:'Ha Long Squid Cake', cuisine:'vietnamese', meal:['lunch','dinner'], spice:0, time:'25p', price:2, tags:['fresh_seafood','street'], ingredients:['Mực tươi','Tiêu','Hành','Mỡ lợn','Nước mắm'], desc:'Chả mực Hạ Long giã tay — giòn dai, thơm mực tươi.' },
+    { id:'pho_chua_lang_son', nameVi:'Phở Chua Lạng Sơn', nameEn:'Lang Son Sour Pho', cuisine:'vietnamese', meal:['breakfast','lunch'], spice:0, time:'20p', price:1, tags:[], ingredients:['Phở','Vịt quay','Chả','Dạ dày','Nước sốt chua','Rau thơm','Đậu phộng'], desc:'Phở chua Lạng Sơn — phở trộn với vịt quay và nước sốt chua.' },
+    { id:'thang_co', nameVi:'Thắng Cố', nameEn:'Highland Horse Stew', cuisine:'vietnamese', meal:['lunch','dinner'], spice:2, time:'60p', price:1, tags:['spicy'], ingredients:['Thịt ngựa','Nội tạng','Thảo quả','Sả','Gừng','Ớt','Rau thơm'], desc:'Thắng cố vùng cao Tây Bắc — lẩu thịt ngựa đặc sản.' },
+    { id:'lau_mam', nameVi:'Lẩu Mắm Miền Tây', nameEn:'Mekong Fish Paste Hotpot', cuisine:'vietnamese', meal:['dinner'], spice:1, time:'40p', price:2, tags:['fresh_seafood','hotpot'], ingredients:['Mắm cá linh','Cá lóc','Tôm','Mực','Bún','Rau đồng','Bông súng'], desc:'Lẩu mắm miền Tây — đậm đà hương mắm với hải sản tươi.' },
+    { id:'banh_cong', nameVi:'Bánh Cống Sóc Trăng', nameEn:'Soc Trang Fried Cake', cuisine:'vietnamese', meal:['breakfast','lunch'], spice:0, time:'20p', price:1, tags:['street'], ingredients:['Bột gạo','Đậu xanh','Tôm','Thịt heo xay','Nước mắm chua ngọt','Rau sống'], desc:'Bánh cống Sóc Trăng — chiên giòn, nhân tôm đậu xanh.' },
+    { id:'bun_mam', nameVi:'Bún Mắm', nameEn:'Fermented Fish Noodle Soup', cuisine:'vietnamese', meal:['lunch','dinner'], spice:1, time:'30p', price:1, tags:['fresh_seafood'], ingredients:['Bún','Mắm cá','Cá lóc','Tôm','Mực','Cà tím','Rau muống'], desc:'Bún mắm miền Tây — nước dùng mắm cá đậm đà.' },
+    { id:'com_tam', nameVi:'Cơm Tấm Sài Gòn', nameEn:'Saigon Broken Rice', cuisine:'vietnamese', meal:['breakfast','lunch','dinner'], spice:0, time:'20p', price:1, tags:['pork'], ingredients:['Cơm tấm','Sườn nướng','Bì','Chả','Trứng ốp la','Nước mắm chua ngọt','Đồ chua'], desc:'Cơm tấm Sài Gòn với sườn nướng than, bì, chả.' },
+    { id:'banh_trang_tron', nameVi:'Bánh Tráng Trộn', nameEn:'Mixed Rice Paper Salad', cuisine:'vietnamese', meal:['lunch'], spice:1, time:'10p', price:1, tags:['street','spicy'], ingredients:['Bánh tráng cắt','Khô bò','Trứng cút','Xoài xanh','Rau răm','Sốt me','Đậu phộng'], desc:'Bánh tráng trộn — snack đường phố Sài Gòn phổ biến.' },
+    { id:'bun_rieu', nameVi:'Bún Riêu Cua', nameEn:'Crab Tomato Noodle Soup', cuisine:'vietnamese', meal:['breakfast','lunch'], spice:0, time:'30p', price:1, tags:['fresh_seafood'], ingredients:['Bún','Riêu cua','Cà chua','Đậu phụ','Tóp mỡ','Rau sống','Mắm tôm'], desc:'Bún riêu cua — nước dùng cà chua cua đồng chua ngọt.' },
+    { id:'bun_ca', nameVi:'Bún Cá Hà Nội', nameEn:'Hanoi Fish Noodle Soup', cuisine:'vietnamese', meal:['breakfast','lunch'], spice:0, time:'25p', price:1, tags:['fresh_seafood'], ingredients:['Bún','Cá lăng','Chả cá','Dọc mùng','Cà chua','Rau thơm','Mắm tôm'], desc:'Bún cá Hà Nội — nước dùng cá tươi thanh ngọt.' },
+    { id:'xoi_xeo', nameVi:'Xôi Xéo Hà Nội', nameEn:'Hanoi Sticky Rice with Mung Bean', cuisine:'vietnamese', meal:['breakfast'], spice:0, time:'15p', price:1, tags:['street'], ingredients:['Xôi','Đậu xanh','Hành phi','Mỡ gà','Ruốc','Pate'], desc:'Xôi xéo sáng Hà Nội — xôi nếp dẻo với đậu xanh hành phi.' },
+  ],
+
+  // 30 Hanoi restaurants
+  restaurants: [
+    { name:'Phở Thìn Bờ Hồ', cuisine:'vietnamese', district:'Hoàn Kiếm', rating:4.5, price:1, address:'13 Lò Đúc, Hai Bà Trưng', phone:'024 3821 2709', hours:'6:00-22:00', delivery:true, img:'pho+bo+hanoi', menu:['pho_bo','pho_ga'] },
+    { name:'Bún Chả Hương Liên', cuisine:'vietnamese', district:'Đống Đa', rating:4.6, price:1, address:'24 Lê Văn Hưu, Hai Bà Trưng', phone:'024 3943 4106', hours:'10:00-20:30', delivery:true, img:'bun+cha+hanoi', menu:['bun_cha'] },
+    { name:'Chả Cá Thăng Long', cuisine:'vietnamese', district:'Hoàn Kiếm', rating:4.3, price:2, address:'19-21-31 Đường Thành', phone:'024 3824 5115', hours:'10:00-22:00', delivery:false, img:'cha+ca+hanoi', menu:['cha_ca'] },
+    { name:'Bánh Cuốn Bà Hoành', cuisine:'vietnamese', district:'Hoàn Kiếm', rating:4.4, price:1, address:'66 Tô Hiến Thành', phone:'', hours:'6:00-11:00', delivery:false, img:'banh+cuon', menu:['banh_cuon'] },
+    { name:'Xôi Yến', cuisine:'street', district:'Hoàn Kiếm', rating:4.2, price:1, address:'35B Nguyễn Hữu Huân', phone:'024 3934 1950', hours:'6:00-23:00', delivery:true, img:'xoi+vietnam', menu:['xoi'] },
+    { name:'Pizza 4P\'s Tràng Tiền', cuisine:'italian', district:'Hoàn Kiếm', rating:4.7, price:3, address:'24 Tràng Tiền', phone:'024 3938 6268', hours:'10:00-22:00', delivery:true, img:'pizza+restaurant+hanoi', menu:['pizza_margherita','pasta_carbonara'] },
+    { name:'Gyu-Kaku Hà Nội', cuisine:'japanese', district:'Cầu Giấy', rating:4.3, price:3, address:'34 Trần Thái Tông', phone:'024 3793 1313', hours:'10:00-22:00', delivery:false, img:'japanese+restaurant', menu:['gyudon','ramen'] },
+    { name:'Sushi Hokkaido Sachi', cuisine:'japanese', district:'Ba Đình', rating:4.5, price:3, address:'54 Văn Cao', phone:'024 3716 6262', hours:'10:30-22:00', delivery:true, img:'sushi+restaurant', menu:['sushi','tempura','udon'] },
+    { name:'Seoul Garden', cuisine:'korean', district:'Cầu Giấy', rating:4.1, price:2, address:'Vincom Trần Duy Hưng', phone:'024 3556 8888', hours:'10:00-22:00', delivery:true, img:'korean+bbq+restaurant', menu:['bibimbap','japchae','kimbap'] },
+    { name:'Duomo Ristorante', cuisine:'italian', district:'Tây Hồ', rating:4.6, price:3, address:'51 Xuân Diệu', phone:'024 3718 8879', hours:'11:00-23:00', delivery:false, img:'italian+restaurant+hanoi', menu:['pasta_carbonara','risotto','lasagna'] },
+    { name:'La Badiane', cuisine:'french', district:'Hoàn Kiếm', rating:4.7, price:3, address:'10 Nam Ngư', phone:'024 3942 4509', hours:'11:30-14:00, 18:00-22:00', delivery:false, img:'french+restaurant+hanoi', menu:['quiche','croissant'] },
+    { name:'Tandoor Indian', cuisine:'indian', district:'Hoàn Kiếm', rating:4.4, price:2, address:'24 Hàng Bè', phone:'024 3824 0359', hours:'11:00-23:00', delivery:true, img:'indian+restaurant', menu:['butter_chicken','naan'] },
+    { name:'Naco Taco', cuisine:'mexican', district:'Hoàn Kiếm', rating:4.5, price:2, address:'25 Hàng Buồm', phone:'', hours:'11:00-22:00', delivery:true, img:'taco+restaurant', menu:['naco_bach_tuoc','naco_gov_taco','naco_bo_nuong','naco_birria','naco_churros'] },
+    { name:'Casa Mexico', cuisine:'mexican', district:'Tây Hồ', rating:4.2, price:2, address:'70 Tô Ngọc Vân', phone:'024 3718 5060', hours:'11:00-22:00', delivery:true, img:'mexican+restaurant', menu:['tacos','burrito','naco_quesadilla','naco_nachos'] },
+    { name:'Dimsum House', cuisine:'chinese', district:'Hoàn Kiếm', rating:4.3, price:2, address:'20 Hàng Buồm', phone:'024 3826 1617', hours:'7:00-22:00', delivery:true, img:'dimsum+restaurant', menu:['dimsum','peking_duck','fried_rice_cn'] },
+    { name:'Thai Express', cuisine:'thai', district:'Ba Đình', rating:4.0, price:2, address:'Lotte Center, 54 Liễu Giai', phone:'024 3333 1868', hours:'10:00-22:00', delivery:true, img:'thai+restaurant', menu:['pad_thai','tom_yum','green_curry'] },
+    { name:'Bún Đậu Mắm Tôm Hàng Khay', cuisine:'street', district:'Hoàn Kiếm', rating:4.1, price:1, address:'1 Hàng Khay', phone:'', hours:'10:00-21:00', delivery:false, img:'bun+dau+mam+tom', menu:['bun_dau'] },
+    { name:'L\'Epicure au 17', cuisine:'french', district:'Hoàn Kiếm', rating:4.5, price:3, address:'17 Lý Quốc Sư', phone:'024 3715 3575', hours:'7:00-22:30', delivery:false, img:'french+bistro', menu:['french_toast','croque_monsieur','quiche'] },
+    { name:'Burger King Vincom', cuisine:'western', district:'Ba Đình', rating:3.9, price:2, address:'Vincom Bà Triệu', phone:'', hours:'9:00-22:00', delivery:true, img:'burger+restaurant', menu:['burger','fish_chips'] },
+    { name:'Bánh Xèo Tôn Thất Thiệp', cuisine:'street', district:'Ba Đình', rating:4.3, price:1, address:'Tôn Thất Thiệp', phone:'', hours:'10:00-14:00', delivery:false, img:'banh+xeo', menu:['banh_xeo'] },
+    { name:'Maison de Tet Decor', cuisine:'vietnamese', district:'Tây Hồ', rating:4.4, price:2, address:'136 Âu Cơ', phone:'024 3716 7890', hours:'8:00-22:00', delivery:false, img:'vietnamese+restaurant+hanoi', menu:['nem_ran','bun_cha','pho_bo'] },
+    { name:'Phở Cuốn Ngũ Xã', cuisine:'street', district:'Ba Đình', rating:4.5, price:1, address:'Ngũ Xã, Trúc Bạch', phone:'', hours:'8:00-22:00', delivery:false, img:'pho+cuon', menu:['pho_cuon'] },
+    { name:'The Burger Federation', cuisine:'western', district:'Tây Hồ', rating:4.4, price:2, address:'25 Xuân Diệu', phone:'024 3718 5045', hours:'11:00-23:00', delivery:true, img:'gourmet+burger', menu:['burger','fish_chips'] },
+    { name:'Ssal Chicken', cuisine:'korean', district:'Đống Đa', rating:4.2, price:2, address:'5 Nguyễn Phúc Lai', phone:'024 3537 9999', hours:'10:00-22:00', delivery:true, img:'korean+fried+chicken', menu:['bibimbap','tteokbokki'] },
+    { name:'Cộng Cà Phê + Bánh Mì', cuisine:'street', district:'Hoàn Kiếm', rating:4.3, price:1, address:'152 Triệu Việt Vương', phone:'', hours:'7:00-23:00', delivery:true, img:'banh+mi+hanoi', menu:['banh_mi'] },
+    { name:'Kem Tràng Tiền', cuisine:'street', district:'Hoàn Kiếm', rating:4.1, price:1, address:'35 Tràng Tiền', phone:'', hours:'8:00-22:30', delivery:false, img:'ice+cream+hanoi', menu:['kem_trang_tien'] },
+    { name:'Nanking Chinese', cuisine:'chinese', district:'Cầu Giấy', rating:4.0, price:2, address:'Keangnam Landmark', phone:'024 3771 0999', hours:'10:00-22:00', delivery:true, img:'chinese+restaurant', menu:['peking_duck','fried_rice_cn','dimsum'] },
+    { name:'Pancake House', cuisine:'western', district:'Tây Hồ', rating:4.3, price:2, address:'3 Quảng An', phone:'024 3719 0909', hours:'7:00-15:00', delivery:false, img:'pancake+breakfast', menu:['pancake','french_toast'] },
+    { name:'Nhà Hàng Lã Vọng', cuisine:'vietnamese', district:'Hoàn Kiếm', rating:4.6, price:2, address:'107 Nguyễn Trường Tộ', phone:'024 3843 3666', hours:'10:00-22:00', delivery:false, img:'cha+ca+la+vong', menu:['cha_ca','nem_ran'] },
+    { name:'O\'Learys Sports Bar', cuisine:'western', district:'Nam Từ Liêm', rating:4.0, price:2, address:'The Garden, Mễ Trì', phone:'024 3787 6868', hours:'10:00-24:00', delivery:true, img:'sports+bar+food', menu:['burger','fish_chips','grilled_cheese'] },
+    { name:'Tokyo Deli', cuisine:'japanese', district:'Đống Đa', rating:4.2, price:2, address:'2 Chùa Bộc', phone:'024 3574 1818', hours:'10:00-22:00', delivery:true, img:'japanese+food+hanoi', menu:['ramen','gyudon','tempura'] },
+  ],
+
+  cuisineColors: {
+    vietnamese:'vietnamese', japanese:'japanese', korean:'korean', italian:'italian',
+    french:'french', indian:'indian', mexican:'mexican', chinese:'chinese',
+    thai:'thai', street:'street', western:'western', north_african:'thai'
+  },
+  cuisineLabels: {
+    vietnamese:'Việt Nam', japanese:'Nhật Bản', korean:'Hàn Quốc', italian:'Ý',
+    french:'Pháp', indian:'Ấn Độ', mexican:'Mexico', chinese:'Trung Hoa',
+    thai:'Thái Lan', street:'Street Food', western:'Phương Tây'
+  },
+  dayNamesVi: ['Chủ Nhật','Thứ Hai','Thứ Ba','Thứ Tư','Thứ Năm','Thứ Sáu','Thứ Bảy'],
+  dayNamesEn: ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'],
+  districts: ['Hoàn Kiếm','Tây Hồ','Đống Đa','Cầu Giấy','Ba Đình','Nam Từ Liêm'],
+};
+
+// ═══════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════
+let state = {
+  currentView: 'schedule',
+  selectedDate: null,
+  selectedMeal: null, // breakfast, lunch, dinner
+  activeMember: null,
+  votes: {}, // { dateKey_meal: { dishId: { dad:'yes', mom:'no', ... } } }
+  lockedMeals: {}, // { dateKey_meal: dishId }
+  grandparents: {}, // { dateKey: true }
+  schoolHoliday: {}, // { dateKey: true }
+  specialLunch: {}, // { dateKey: { dad:false, mom:false } } - exclude from lunch
+  mealHistory: [], // [{ date, meal, dishId, timestamp }]
+  activeMembers: { dad:true, mom:true, son:true, daughter:true, grandparents:false },
+  cuisineFilter: 'all',
+  foodTypeFilter: 'all',
+};
+
+function loadState() {
+  try {
+    const saved = localStorage.getItem('familyMeals');
+    if (saved) {
+      const s = JSON.parse(saved);
+      Object.assign(state, s);
+      // Ensure activeMembers exists for older saved states
+      if (!state.activeMembers) {
+        state.activeMembers = { dad:true, mom:true, son:true, daughter:true, grandparents:false };
+      }
+    }
+  } catch(e) {}
+}
+function saveState() {
+  try { localStorage.setItem('familyMeals', JSON.stringify(state)); } catch(e) {}
+}
+
+// ═══════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════
+function getWeekDates() {
+  const today = new Date();
+  const day = today.getDay();
+  const mon = new Date(today);
+  mon.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
+  const dates = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(mon);
+    d.setDate(mon.getDate() + i);
+    dates.push(d);
+  }
+  return dates;
+}
+
+function dateKey(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function isToday(d) {
+  const t = new Date();
+  return d.getDate()===t.getDate() && d.getMonth()===t.getMonth() && d.getFullYear()===t.getFullYear();
+}
+
+function isWeekend(d) { return d.getDay()===0 || d.getDay()===6; }
+
+function getMealMembers(date, meal) {
+  const dk = dateKey(date);
+  const weekend = isWeekend(date);
+  const holiday = state.schoolHoliday[dk];
+  let members = [];
+
+  if (meal === 'breakfast') {
+    members.push('dad','mom');
+    if (weekend || holiday) members.push('son','daughter');
+  } else if (meal === 'lunch') {
+    if (weekend || holiday) {
+      members.push('dad','mom','son','daughter');
+    } else {
+      // Weekday lunch: dad+mom, unless special lunch excludes one
+      const sp = state.specialLunch[dk] || {};
+      if (!sp.dad) members.push('dad');
+      if (!sp.mom) members.push('mom');
+    }
+  } else { // dinner
+    members.push('dad','mom','son','daughter');
+  }
+  // Filter by active member selector
+  members = members.filter(m => state.activeMembers[m]);
+  return members;
+}
+
+function getPortionCount() {
+  let count = ['dad','mom','son','daughter'].filter(m => state.activeMembers[m]).length;
+  if (state.activeMembers.grandparents) count += 2;
+  return count;
+}
+
+function toggleMemberSelector(id) {
+  state.activeMembers[id] = !state.activeMembers[id];
+  // Grandparents toggle also syncs with per-day grandparent state
+  if (id === 'grandparents') {
+    const date = state.selectedDate ? new Date(state.selectedDate) : new Date();
+    const dk = dateKey(date);
+    state.grandparents[dk] = state.activeMembers.grandparents;
+  }
+  saveState();
+  renderMemberSelector();
+  // Re-render active view
+  if (state.currentView === 'schedule') renderWeekGrid();
+  else if (state.currentView === 'today') renderTodayView();
+  else if (state.currentView === 'search') renderSearch();
+}
+
+function renderMemberSelector() {
+  const selectorData = [
+    { id:'dad', icon:'👨', name:'Bố', sub:'Father' },
+    { id:'mom', icon:'👩', name:'Mẹ', sub:'Mother' },
+    { id:'son', icon:'👦', name:'Con trai', sub:'Son' },
+    { id:'daughter', icon:'👧', name:'Con gái', sub:'Daughter' },
+    { id:'grandparents', icon:'👴👵', name:'Grandparents', sub:'Ông Bà' },
+  ];
+
+  document.getElementById('member-selector').innerHTML = selectorData.map(m => {
+    const active = state.activeMembers[m.id];
+    return `<div class="member-box ${active?'active':''}" onclick="toggleMemberSelector('${m.id}')">
+      <span class="mb-check">${active?'✓':''}</span>
+      <span class="mb-icon">${m.icon}</span>
+      <div>
+        <div class="mb-name">${m.name}</div>
+        <div class="mb-sub">${m.sub}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const portions = getPortionCount();
+  document.getElementById('member-count').innerHTML =
+    `🍽️ <b>${portions} phần</b> (${portions} portions) — ${['dad','mom','son','daughter','grandparents'].filter(m=>state.activeMembers[m]).length} người được chọn`;
+}
+
+function getMealSlots(date) {
+  const dk = dateKey(date);
+  const weekend = isWeekend(date);
+  const holiday = state.schoolHoliday[dk];
+  const slots = [];
+
+  if (weekend || holiday) {
+    slots.push('breakfast','lunch','dinner');
+  } else {
+    // Weekday: breakfast for parents, lunch for parents, dinner for all
+    slots.push('breakfast','lunch','dinner');
+  }
+  return slots;
+}
+
+function dishImage(dish) {
+  const hash = Math.abs(dish.id.split('').reduce((a,c) => ((a << 5) - a) + c.charCodeAt(0), 0));
+  const name = (dish.nameVi + ' ' + dish.nameEn + ' ' + dish.id).toLowerCase();
+  const tags = dish.tags || [];
+
+  // Match dish content to best foodish category
+  // Valid: rice, pasta, pizza, burger, biryani, dosa, samosa, dessert
+  let cat = null;
+  if (name.match(/pizza/)) cat = 'pizza';
+  else if (name.match(/pasta|spaghetti|fettuccine|lasagna|carbonara|bolognese|penne/)) cat = 'pasta';
+  else if (name.match(/burger|hamburger/)) cat = 'burger';
+  else if (name.match(/biryani|cà ri|curry|masala|tikka|tandoori|enchilada/)) cat = 'biryani';
+  else if (name.match(/tiramisu|fondant|chocolate|mousse|crème|tart|pudding|cheesecake|dessert|kem |ice cream|panna cotta|chè |flan|churros/)) cat = 'dessert';
+  else if (name.match(/samosa|nem rán|chả giò|spring roll|tempura|croquette|bánh rán|nem chua|gỏi cuốn/)) cat = 'samosa';
+  else if (name.match(/taco|burrito|wrap|quesadilla|nachos|dosa|bánh xèo|bánh cuốn|bánh căn|bánh bèo|bánh khọt|bánh cống|crêpe|pancake|waffle|bánh tôm|bánh giò|quiche/)) cat = 'dosa';
+  else if (name.match(/phở|bún|mì |miến|mì quảng|cao lầu|hủ tiếu|bánh canh|bánh đa|noodle|udon|ramen|soba|pad thai|khao soi|vermicelli/)) cat = 'pasta';
+  else if (name.match(/cơm|rice|risotto|xôi|omurice|donburi|gyudon|bibimbap/)) cat = 'rice';
+  else if (name.match(/steak|bò bít tết|sandwich|bánh mì/)) cat = 'burger';
+  else if (name.match(/sushi|sashimi/)) cat = 'rice';
+  else if (name.match(/salad|gỏi/)) cat = 'rice';
+  else if (name.match(/soup|súp|canh|cháo|lẩu|hotpot|chowder/)) cat = 'biryani';
+  else if (name.match(/chiên|rán|fried|katsu|nugget|chicken/)) cat = 'samosa';
+  else if (name.match(/nướng|grilled|roast|gà |thịt |bò |cá |tôm |fish|beef|pork|lamb|duck/)) cat = 'biryani';
+  else if (name.match(/fondue|phô mai|cheese/)) cat = 'pasta';
+  else if (tags.includes('pizza')) cat = 'pizza';
+
+  // Fallback: match by cuisine
+  if (!cat) {
+    const cuisineMap = {
+      vietnamese:'rice', japanese:'rice', korean:'biryani', italian:'pasta',
+      french:'dessert', indian:'biryani', mexican:'dosa', chinese:'rice',
+      thai:'biryani', street:'samosa', western:'burger'
+    };
+    cat = cuisineMap[dish.cuisine] || 'rice';
+  }
+
+  const imgNum = (hash % 15) + 1;
+  return `https://foodish-api.com/images/${cat}/${cat}${imgNum}.jpg`;
+}
+
+function restImage(r) {
+  const hash = Math.abs(r.name.split('').reduce((a,c) => ((a << 5) - a) + c.charCodeAt(0), 0));
+  const cuisineMap = {
+    vietnamese:'rice', japanese:'rice', korean:'biryani', italian:'pizza',
+    french:'dessert', indian:'biryani', mexican:'burger', chinese:'rice',
+    thai:'rice', street:'samosa', western:'burger'
+  };
+  const cat = cuisineMap[r.cuisine] || 'rice';
+  const imgNum = (hash % 15) + 1;
+  return `https://foodish-api.com/images/${cat}/${cat}${imgNum}.jpg`;
+}
+
+// ═══════════════════════════════════════
+// COMPATIBILITY ENGINE
+// ═══════════════════════════════════════
+function calculateCompatibility(dish, memberIds) {
+  const results = {};
+  let totalScore = 0;
+
+  memberIds.forEach(mid => {
+    const taste = DATA.tastes[mid];
+    if (!taste) { results[mid] = { score:0, status:'soso', reasons:[] }; return; }
+
+    let score = 0;
+    const reasons = [];
+
+    // Cuisine score
+    const cs = taste.cuisines[dish.cuisine];
+    if (cs !== undefined) {
+      score += cs;
+      if (cs === 2) reasons.push(`Thích ${DATA.cuisineLabels[dish.cuisine]}`);
+      else if (cs === -2) reasons.push(`Không thích ${DATA.cuisineLabels[dish.cuisine]}`);
+    }
+
+    // Tag scores
+    if (dish.tags && taste.tags) {
+      dish.tags.forEach(tag => {
+        const ts = taste.tags[tag];
+        if (ts !== undefined) {
+          score += ts;
+          const tagName = tag.replace(/_/g,' ');
+          if (ts === 2) reasons.push(`Thích ${tagName}`);
+          else if (ts === -2) reasons.push(`Không thích ${tagName}`);
+        }
+      });
+    }
+
+    // Normalize to 0-100
+    const maxPossible = 2 + (dish.tags ? dish.tags.length * 2 : 0);
+    const minPossible = -2 + (dish.tags ? dish.tags.length * -2 : 0);
+    const range = maxPossible - minPossible || 1;
+    const pct = Math.round(((score - minPossible) / range) * 100);
+
+    let status = 'like';
+    if (pct < 40) status = 'dislike';
+    else if (pct < 65) status = 'soso';
+
+    results[mid] = { score, pct, status, reasons };
+    totalScore += pct;
+  });
+
+  const avgPct = Math.round(totalScore / memberIds.length);
+  return { members: results, avgPct };
+}
+
+function getConflicts(dish, compat, memberIds) {
+  const conflicts = [];
+  memberIds.forEach(mid => {
+    const m = compat.members[mid];
+    if (m && m.status === 'dislike') {
+      const name = DATA.members[mid]?.name || mid;
+      const reason = m.reasons.filter(r => r.startsWith('Không')).join(', ');
+      conflicts.push({ member: name, reason });
+    }
+  });
+  // Spicy check
+  if (dish.tags && dish.tags.includes('spicy') && dish.spice >= 2) {
+    const spicyHaters = memberIds.filter(mid => {
+      const t = DATA.tastes[mid];
+      return t && t.tags && t.tags.spicy === -2;
+    }).map(mid => DATA.members[mid]?.name);
+    if (spicyHaters.length > 0) {
+      conflicts.push({ member: spicyHaters.join(' & '), reason: `🌶️ Cay — ${spicyHaters.join(' & ')} không ăn cay` });
+    }
+  }
+  return conflicts;
+}
+
+function getRepeatInfo(dishId) {
+  const now = Date.now();
+  const fiveDays = 5 * 24 * 60 * 60 * 1000;
+  const recent = state.mealHistory.find(h => h.dishId === dishId && (now - h.timestamp) < 30*24*60*60*1000);
+  if (!recent) return null;
+  const daysAgo = Math.round((now - recent.timestamp) / (24*60*60*1000));
+  const isRecent = (now - recent.timestamp) < fiveDays;
+  return { daysAgo, isRecent };
+}
+
+// ═══════════════════════════════════════
+// RENDER: WEEK SCHEDULE
+// ═══════════════════════════════════════
+function renderWeekGrid() {
+  const dates = getWeekDates();
+  const grid = document.getElementById('week-grid');
+
+  grid.innerHTML = dates.map((d, i) => {
+    const dk = dateKey(d);
+    const today = isToday(d);
+    const weekend = isWeekend(d);
+    const holiday = state.schoolHoliday[dk];
+    const gp = state.grandparents[dk];
+    const slots = getMealSlots(d);
+
+    let icons = '';
+    if (gp) icons += '👴👵 ';
+    if (!weekend && !holiday) icons += '🏫 ';
+    if (!weekend && !holiday) icons += '❤️ ';
+
+    const slotsHtml = slots.map(sl => {
+      const key = `${dk}_${sl}`;
+      const locked = state.lockedMeals[key];
+      const dish = locked ? DATA.dishes.find(dd => dd.id === locked) : null;
+      const members = getMealMembers(d, sl);
+      const slotIcon = sl==='breakfast'?'🌅':sl==='lunch'?'☀️':'🌙';
+      const slotName = sl==='breakfast'?'Sáng':sl==='lunch'?'Trưa':'Tối';
+      const slotNameEn = sl==='breakfast'?'Breakfast':sl==='lunch'?'Lunch':'Dinner';
+
+      let extra = '';
+      if (state.activeMembers.grandparents && sl === 'dinner') extra = `<span class="portion-badge">+2 Ông Bà</span>`;
+
+      return `<div class="meal-slot ${locked?'locked':''}" onclick="openMealSlot('${dk}','${sl}',${d.getTime()})">
+        <span class="slot-icon">${slotIcon}</span>
+        <div class="slot-info">
+          <div class="slot-name">${slotName} / ${slotNameEn}</div>
+          ${dish ? `<div class="slot-dish">${dish.nameVi}</div>` : ''}
+        </div>
+        ${dish ? `<img class="slot-thumb" src="${dishImage(dish)}" alt="" loading="lazy" onerror="this.style.display='none'">` : ''}
+        ${extra}
+      </div>`;
+    }).join('');
+
+    const dayVi = DATA.dayNamesVi[d.getDay()];
+    const dayEn = DATA.dayNamesEn[d.getDay()];
+    // Pick a random food image per day based on day index
+    const dayFoodCats = ['rice','pizza','pasta','biryani','dessert','burger','dosa'];
+    const dayImg = `https://foodish-api.com/images/${dayFoodCats[i]}/${dayFoodCats[i]}${i+1}.jpg`;
+
+    return `<div class="day-card ${today?'today':''}" style="animation-delay:${i*50}ms">
+      <div class="day-card-header">
+        <img src="${dayImg}" alt="" loading="lazy" onerror="this.style.display='none'">
+        <div class="day-overlay">
+          <div class="day-name">${dayVi}</div>
+          <div class="day-name-en">${dayEn}</div>
+          <div class="day-date">${d.getDate()}/${d.getMonth()+1}</div>
+        </div>
+      </div>
+      <div class="day-card-body">
+        <div class="day-icons">${icons}</div>
+        ${slotsHtml}
+      </div>
+    </div>`;
+  }).join('');
+
+  // Scroll to today
+  setTimeout(() => {
+    const todayCard = grid.querySelector('.today');
+    if (todayCard) todayCard.scrollIntoView({ behavior:'smooth', inline:'center', block:'nearest' });
+  }, 100);
+
+}
+
+// ═══════════════════════════════════════
+// OPEN MEAL SLOT → TODAY VIEW
+// ═══════════════════════════════════════
+function openMealSlot(dk, meal, timestamp) {
+  state.selectedDate = timestamp;
+  state.selectedMeal = meal;
+  state.activeMember = null;
+  saveState();
+  switchView('today');
+}
+
+// ═══════════════════════════════════════
+// RENDER: TODAY VIEW
+// ═══════════════════════════════════════
+function renderTodayView() {
+  const date = state.selectedDate ? new Date(state.selectedDate) : new Date();
+  const dk = dateKey(date);
+  const meal = state.selectedMeal || 'dinner';
+  const weekend = isWeekend(date);
+  const holiday = state.schoolHoliday[dk];
+
+  document.getElementById('today-title').textContent =
+    `${DATA.dayNamesVi[date.getDay()]} ${date.getDate()}/${date.getMonth()+1}`;
+  document.getElementById('today-subtitle').textContent =
+    `${DATA.dayNamesEn[date.getDay()]} — Chọn bữa ăn cho gia đình`;
+
+  // Update hero image based on meal
+  const heroImgs = { breakfast:'breakfast+food+table', lunch:'lunch+asian+food', dinner:'dinner+family+food' };
+  const heroEl = document.querySelector('.today-hero img');
+  const heroLock = { breakfast:50, lunch:60, dinner:70 };
+  const heroCats = { breakfast:'dosa', lunch:'rice', dinner:'biryani' };
+  if (heroEl) heroEl.src = `https://foodish-api.com/images/${heroCats[meal]}/${heroCats[meal]}${heroLock[meal]-45}.jpg`;
+
+  // Meal tabs
+  const slots = getMealSlots(date);
+  document.getElementById('meal-tabs').innerHTML = slots.map(sl => {
+    const icon = sl==='breakfast'?'🌅':sl==='lunch'?'☀️':'🌙';
+    const name = sl==='breakfast'?'Sáng':sl==='lunch'?'Trưa':'Tối';
+    return `<button class="meal-tab ${sl===meal?'active':''}" onclick="selectMealTab('${sl}')">
+      <span class="tab-icon">${icon}</span>${name}
+    </button>`;
+  }).join('');
+
+  // Members for this meal
+  const members = getMealMembers(date, meal);
+
+  // Voting section
+  renderVoting(dk, meal, members);
+
+  // Food suggestions
+  renderFoodSuggestions(dk, meal, members);
+}
+
+function selectMealTab(meal) {
+  state.selectedMeal = meal;
+  state.activeMember = null;
+  saveState();
+  renderTodayView();
+}
+
+// ═══════════════════════════════════════
+// RENDER: VOTING
+// ═══════════════════════════════════════
+function renderVoting(dk, meal, members) {
+  const key = `${dk}_${meal}`;
+  const locked = state.lockedMeals[key];
+
+  if (locked) {
+    const dish = DATA.dishes.find(d => d.id === locked);
+    document.getElementById('voting-section').innerHTML = `
+      <div class="voting-panel" style="text-align:center">
+        <div style="font-size:32px;margin-bottom:8px">🎉</div>
+        <div class="voting-title">Đã chọn: ${dish?.nameVi || locked}</div>
+        <p style="color:var(--muted);font-size:13px">${dish?.nameEn || ''}</p>
+        ${state.grandparents[dk] && meal === 'dinner' ? '<span class="portion-badge" style="margin-top:8px;display:inline-block">+2 phần cho Ông Bà</span>' : ''}
+        <button class="btn-outline" style="margin-top:12px" onclick="unlockMeal('${key}')">Chọn lại</button>
+      </div>`;
+    document.getElementById('suggestions-title').style.display = 'none';
+    document.getElementById('food-suggestions').innerHTML = '';
+    return;
+  }
+
+  document.getElementById('suggestions-title').style.display = '';
+
+  // Voter avatars
+  const avatarHtml = members.map(mid => {
+    const m = DATA.members[mid];
+    if (!m) return '';
+    const isActive = state.activeMember === mid;
+    const voteKey = `${key}`;
+    const votes = state.votes[voteKey] || {};
+    // Show vote indicator on avatar
+    let indicator = '';
+    // Count how many dishes this member has voted on
+    const votedCount = Object.values(votes).filter(v => v[mid]).length;
+    if (votedCount > 0) indicator = `<span class="vote-indicator">${votedCount}</span>`;
+
+    return `<div class="voter-avatar ${isActive?'active':''}" onclick="setActiveVoter('${mid}')" title="${m.name}">
+      ${m.icon}${indicator}
+    </div>`;
+  }).join('');
+
+  // Consensus bar
+  const votes = state.votes[key] || {};
+  const totalDishes = Object.keys(votes).length;
+  let bestDish = null, bestScore = -Infinity;
+  Object.entries(votes).forEach(([dishId, dv]) => {
+    let score = 0;
+    members.forEach(mid => {
+      if (dv[mid] === 'yes') score += 2;
+      else if (dv[mid] === 'maybe') score += 1;
+      else if (dv[mid] === 'no') score -= 1;
+    });
+    if (score > bestScore) { bestScore = score; bestDish = dishId; }
+  });
+
+  const maxScore = members.length * 2;
+  const consensusPct = totalDishes > 0 ? Math.max(0, Math.round((bestScore / maxScore) * 100)) : 0;
+
+  document.getElementById('voting-section').innerHTML = `
+    <div class="voting-panel">
+      <div class="voting-title">👨‍👩‍👧‍👦 Bỏ phiếu — Chọn người rồi vote trên thẻ món</div>
+      <div class="voter-avatars">${avatarHtml}</div>
+      <div class="consensus-bar"><div class="consensus-fill" style="width:${consensusPct}%"></div></div>
+      <div class="consensus-text">${consensusPct > 0 ? `Đồng thuận: ${consensusPct}%` : 'Chạm avatar để bắt đầu bỏ phiếu'}</div>
+      ${bestDish && consensusPct >= 80 ? `<button class="lock-btn" onclick="lockMeal('${key}','${bestDish}')">✅ Chốt: ${DATA.dishes.find(d=>d.id===bestDish)?.nameVi || bestDish}</button>` : ''}
+      ${totalDishes > 0 && consensusPct < 80 && consensusPct > 0 ? `<button class="lock-btn" style="background:var(--amber)" onclick="lockMeal('${key}','${bestDish}')">🤝 Chọn thỏa hiệp: ${DATA.dishes.find(d=>d.id===bestDish)?.nameVi || bestDish}</button>` : ''}
+    </div>`;
+}
+
+function setActiveVoter(mid) {
+  state.activeMember = state.activeMember === mid ? null : mid;
+  renderTodayView();
+}
+
+function castVote(key, dishId, vote) {
+  if (!state.activeMember) return;
+  if (!state.votes[key]) state.votes[key] = {};
+  if (!state.votes[key][dishId]) state.votes[key][dishId] = {};
+  state.votes[key][dishId][state.activeMember] = vote;
+  saveState();
+
+  // Check unanimous yes
+  const date = state.selectedDate ? new Date(state.selectedDate) : new Date();
+  const dk = dateKey(date);
+  const meal = state.selectedMeal || 'dinner';
+  const members = getMealMembers(date, meal);
+  const dv = state.votes[key][dishId];
+  const allYes = members.every(mid => dv[mid] === 'yes');
+
+  if (allYes) {
+    lockMeal(key, dishId);
+    // Confetti!
+    if (typeof confetti === 'function') {
+      confetti({ particleCount:100, spread:70, origin:{y:0.6} });
+    }
+    return;
+  }
+
+  // Bounce animation on avatar
+  const avatars = document.querySelectorAll('.voter-avatar');
+  avatars.forEach(a => {
+    if (a.classList.contains('active')) {
+      a.style.animation = 'scaleBounce .3s ease';
+      setTimeout(() => a.style.animation = '', 300);
+    }
+  });
+
+  renderTodayView();
+}
+
+function lockMeal(key, dishId) {
+  state.lockedMeals[key] = dishId;
+  // Add to history
+  const [dk, meal] = key.split('_');
+  state.mealHistory.push({ date: dk, meal, dishId, timestamp: Date.now() });
+  // Keep last 30 days
+  const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+  state.mealHistory = state.mealHistory.filter(h => Date.now() - h.timestamp < thirtyDays);
+  saveState();
+
+  if (typeof confetti === 'function') {
+    confetti({ particleCount:80, spread:60, origin:{y:0.6} });
+  }
+
+  renderTodayView();
+  renderWeekGrid();
+}
+
+function unlockMeal(key) {
+  delete state.lockedMeals[key];
+  delete state.votes[key];
+  saveState();
+  renderTodayView();
+  renderWeekGrid();
+}
+
+// ═══════════════════════════════════════
+// RENDER: FOOD SUGGESTIONS
+// ═══════════════════════════════════════
+// Food type classification based on dish name, tags, and ingredients
+function getFoodType(dish) {
+  const name = (dish.nameVi + ' ' + dish.nameEn + ' ' + dish.id).toLowerCase();
+  const tags = dish.tags || [];
+  const types = [];
+  if (name.match(/cơm|rice|risotto|biryani|bibimbap|donburi|omurice/)) types.push('rice');
+  if (name.match(/phở|bún|mì|miến|cao lầu|hủ tiếu|bánh canh|bánh đa|noodle|pasta|spaghetti|udon|ramen|soba|pad thai|vermicelli|penne|fettuccine|gnocchi|lasagna/)) types.push('noodles');
+  if (name.match(/pizza/)) types.push('pizza');
+  if (name.match(/bò|gà|lợn|sườn|thịt|beef|chicken|pork|lamb|steak|burger|duck|vịt|chop/) || tags.includes('pork')) types.push('meat');
+  if (name.match(/cá|tôm|mực|hải sản|nghêu|cua|fish|shrimp|seafood|sushi|sashimi|salmon|tuna|lobster|crab/) || tags.includes('fresh_seafood') || tags.includes('raw_seafood')) types.push('seafood');
+  if (name.match(/rau|salad|vegetable|chay|tofu|đậu hũ|đậu phụ/) || tags.includes('vegetables') || tags.includes('fried_tofu')) types.push('vegetables');
+  if (name.match(/canh|súp|soup|lẩu|hotpot|cháo|porridge|chowder/) || tags.includes('hotpot')) types.push('soup');
+  if (name.match(/chiên|rán|fried|nem|spring roll|bánh|tempura|katsu|nugget|samosa/) || tags.includes('street')) types.push('fried');
+  if (name.match(/curry|cà ri|masala|tikka/)) types.push('curry');
+  if (name.match(/taco|burrito|wrap|quesadilla|nachos|sandwich|bánh mì|bread|croissant|pancake|waffle|crêpe|quiche/)) types.push('bread');
+  return types.length ? types : ['other'];
+}
+
+const foodTypeLabels = {
+  rice:{ icon:'🍚', vi:'Cơm / Rice', img:'rice' },
+  noodles:{ icon:'🍜', vi:'Bún Mì / Noodles', img:'pasta' },
+  pizza:{ icon:'🍕', vi:'Pizza', img:'pizza' },
+  meat:{ icon:'🥩', vi:'Thịt / Meat', img:'burger' },
+  seafood:{ icon:'🦐', vi:'Hải sản / Seafood', img:'rice' },
+  vegetables:{ icon:'🥬', vi:'Rau Chay / Veggies', img:'dosa' },
+  soup:{ icon:'🍲', vi:'Canh Lẩu / Soup', img:'biryani' },
+  fried:{ icon:'🍤', vi:'Chiên Rán / Fried', img:'samosa' },
+  curry:{ icon:'🍛', vi:'Cà Ri / Curry', img:'biryani' },
+  bread:{ icon:'🥖', vi:'Bánh / Bread', img:'dessert' },
+  other:{ icon:'🍽️', vi:'Khác / Other', img:'rice' }
+};
+
+function reRenderSuggestions() {
+  const date = state.selectedDate ? new Date(state.selectedDate) : new Date();
+  const meal = state.selectedMeal || 'dinner';
+  const members = getMealMembers(date, meal);
+  renderFoodSuggestions(dateKey(date), meal, members);
+}
+
+function setCuisineFilter(cuisine) {
+  state.cuisineFilter = cuisine;
+  state.foodTypeFilter = 'all'; // reset type when changing cuisine
+  reRenderSuggestions();
+}
+
+function setFoodTypeFilter(type) {
+  state.foodTypeFilter = type;
+  reRenderSuggestions();
+}
+
+function renderDishCard(d, i, dk, meal, members, key) {
+  const greyed = d.compat.avgPct < 50;
+  const repeatWarn = d.repeat && d.repeat.isRecent;
+  const overallClass = d.compat.avgPct >= 70 ? 'compat-high' : d.compat.avgPct >= 50 ? 'compat-med' : 'compat-low';
+
+  const memberBars = members.map(mid => {
+    const m = DATA.members[mid];
+    const c = d.compat.members[mid];
+    const icon = c?.status === 'like' ? '✅' : c?.status === 'soso' ? '🟡' : '❌';
+    return `<div class="compat-member"><span class="member-icon">${m?.icon||''}</span><span>${icon}</span></div>`;
+  }).join('');
+
+  let conflictHtml = '';
+  d.conflicts.forEach(c => {
+    conflictHtml += `<span class="conflict-badge">${c.reason || `⚠️ ${c.member} không thích lắm`}</span>`;
+  });
+
+  let repeatHtml = '';
+  if (d.repeat) repeatHtml = `<span class="repeat-badge">🔁 Đã ăn ${d.repeat.daysAgo} ngày trước</span>`;
+
+  const spice = '🌶️'.repeat(d.spice);
+
+  const votes = state.votes[key]?.[d.id] || {};
+  let voteHtml = '';
+  if (state.activeMember) {
+    const myVote = votes[state.activeMember] || '';
+    voteHtml = `<div class="vote-btns">
+      <button class="vote-btn ${myVote==='yes'?'selected':''}" onclick="event.stopPropagation();castVote('${key}','${d.id}','yes')">✅</button>
+      <button class="vote-btn ${myVote==='maybe'?'selected':''}" onclick="event.stopPropagation();castVote('${key}','${d.id}','maybe')">🟡</button>
+      <button class="vote-btn ${myVote==='no'?'selected':''}" onclick="event.stopPropagation();castVote('${key}','${d.id}','no')">❌</button>
+    </div>`;
+  }
+
+  let existingVotes = '';
+  if (Object.keys(votes).length > 0) {
+    existingVotes = '<div style="display:flex;gap:6px;margin-top:4px">' +
+      Object.entries(votes).map(([mid, v]) => {
+        const m = DATA.members[mid];
+        const vIcon = v==='yes'?'✅':v==='maybe'?'🟡':'❌';
+        return `<span style="font-size:12px">${m?.icon||''}${vIcon}</span>`;
+      }).join('') + '</div>';
+  }
+
+  return `<div class="food-card ${greyed?'greyed':''} ${repeatWarn?'repeat-warn':''}"
+    style="animation-delay:${i*50}ms" onclick="openDishModal('${d.id}','${dk}','${meal}')">
+    <div class="food-card-img-wrap">
+      <img class="food-card-img" src="${dishImage(d)}" alt="${d.nameVi}" loading="lazy"
+        onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 300%22><rect fill=%22%23E8DDD0%22 width=%22400%22 height=%22300%22/><text x=%22200%22 y=%22150%22 text-anchor=%22middle%22 fill=%22%238B7355%22 font-size=%2240%22>🍽️</text></svg>'">
+      <div class="food-card-overlay">
+        <span class="cuisine-tag cuisine-${DATA.cuisineColors[d.cuisine]||'western'}">${DATA.cuisineLabels[d.cuisine]||d.cuisine}</span>
+        <span class="compat-overall ${overallClass}">${d.compat.avgPct}%</span>
+      </div>
+    </div>
+    <div class="food-card-body">
+      <div class="food-card-name">${d.nameVi}</div>
+      <div class="food-card-name-en">${d.nameEn}</div>
+      <div class="compat-bar">${memberBars}</div>
+      ${conflictHtml}
+      ${repeatHtml}
+      <div class="food-chips">
+        ${spice ? `<span class="chip">${spice}</span>` : ''}
+        <span class="chip">⏱️ ${d.time}</span>
+        <span class="chip">💰 ${'₫'.repeat(d.price)}</span>
+      </div>
+      ${existingVotes}
+      ${voteHtml}
+    </div>
+  </div>`;
+}
+
+function renderFoodSuggestions(dk, meal, members) {
+  const key = `${dk}_${meal}`;
+  if (state.lockedMeals[key]) return;
+
+  let allCandidates = DATA.dishes.filter(d => d.meal.includes(meal));
+
+  // Build cuisine filter
+  const cuisinesInMeal = [...new Set(allCandidates.map(d => d.cuisine))];
+  const filterEl = document.getElementById('cuisine-filter');
+  const activeCuisine = state.cuisineFilter || 'all';
+  const activeType = state.foodTypeFilter || 'all';
+
+  let cuisineHtml = `<button class="cuisine-pill ${activeCuisine==='all'?'active':''}" onclick="setCuisineFilter('all')">🍽️ Tất cả</button>`;
+  cuisineHtml += cuisinesInMeal.map(c => {
+    const label = DATA.cuisineLabels[c] || c;
+    const flags = {vietnamese:'🇻🇳',japanese:'🇯🇵',korean:'🇰🇷',italian:'🇮🇹',french:'🇫🇷',indian:'🇮🇳',mexican:'🇲🇽',chinese:'🇨🇳',thai:'🇹🇭',street:'🛒',western:'🍔'};
+    return `<button class="cuisine-pill ${activeCuisine===c?'active':''}" onclick="setCuisineFilter('${c}')">${flags[c]||'🍽️'} ${label}</button>`;
+  }).join('');
+
+  filterEl.innerHTML = `
+    <div class="filter-row"><span class="filter-label">🌍 Quốc gia</span><div class="cuisine-filter">${cuisineHtml}</div></div>`;
+
+  // Apply cuisine filter
+  let filtered = activeCuisine === 'all' ? allCandidates : allCandidates.filter(d => d.cuisine === activeCuisine);
+
+  // Score all candidates
+  filtered = filtered.map(d => {
+    const compat = calculateCompatibility(d, members);
+    const conflicts = getConflicts(d, compat, members);
+    const repeat = getRepeatInfo(d.id);
+    return { ...d, compat, conflicts, repeat };
+  });
+  filtered.sort((a, b) => b.compat.avgPct - a.compat.avgPct);
+
+  const container = document.getElementById('food-suggestions');
+
+  // If a food type is selected, show dishes in that group
+  if (activeType !== 'all') {
+    const dishes = filtered.filter(d => getFoodType(d).includes(activeType));
+    const info = foodTypeLabels[activeType] || { icon:'🍽️', vi:activeType };
+    container.innerHTML =
+      `<div class="group-header" onclick="setFoodTypeFilter('all')">
+        <span class="group-back">← Quay lại</span>
+        <span class="group-title">${info.icon} ${info.vi} (${dishes.length} món)</span>
+      </div>` +
+      `<div class="food-grid">${dishes.map((d, i) => renderDishCard(d, i, dk, meal, members, key)).join('')}</div>`;
+    return;
+  }
+
+  // Group view: show food type group cards
+  const groups = {};
+  filtered.forEach(d => {
+    getFoodType(d).forEach(t => {
+      if (!groups[t]) groups[t] = [];
+      groups[t].push(d);
+    });
+  });
+
+  // Sort groups by number of dishes (biggest first), then by best compatibility
+  const sortedGroups = Object.entries(groups).sort((a, b) => {
+    if (b[1].length !== a[1].length) return b[1].length - a[1].length;
+    return b[1][0].compat.avgPct - a[1][0].compat.avgPct;
+  });
+
+  container.innerHTML = `<div class="group-grid">${sortedGroups.map(([type, dishes]) => {
+    const info = foodTypeLabels[type] || { icon:'🍽️', vi:type, img:'rice' };
+    const topDish = dishes[0];
+    const avgCompat = Math.round(dishes.reduce((s, d) => s + d.compat.avgPct, 0) / dishes.length);
+    const compatClass = avgCompat >= 70 ? 'compat-high' : avgCompat >= 50 ? 'compat-med' : 'compat-low';
+    const imgNum = (type.charCodeAt(0) % 10) + 1;
+    const imgSrc = `https://foodish-api.com/images/${info.img}/${info.img}${imgNum}.jpg`;
+
+    return `<div class="group-card" onclick="setFoodTypeFilter('${type}')">
+      <div class="group-card-img">
+        <img src="${imgSrc}" alt="${info.vi}" loading="lazy"
+          onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 300%22><rect fill=%22%23E8DDD0%22 width=%22400%22 height=%22300%22/><text x=%22200%22 y=%22150%22 text-anchor=%22middle%22 fill=%22%238B7355%22 font-size=%2240%22>${info.icon}</text></svg>'">
+        <div class="group-card-overlay">
+          <span class="group-card-count">${dishes.length} món</span>
+          <span class="compat-overall ${compatClass}">${avgCompat}%</span>
+        </div>
+      </div>
+      <div class="group-card-body">
+        <div class="group-card-name">${info.icon} ${info.vi}</div>
+        <div class="group-card-preview">${dishes.slice(0,3).map(d => d.nameVi).join(', ')}${dishes.length > 3 ? '...' : ''}</div>
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+// ═══════════════════════════════════════
+// DISH MODAL
+// ═══════════════════════════════════════
+function openDishModal(dishId, dk, meal) {
+  const dish = DATA.dishes.find(d => d.id === dishId);
+  if (!dish) return;
+
+  const date = state.selectedDate ? new Date(state.selectedDate) : new Date();
+  const members = getMealMembers(date, meal);
+  const compat = calculateCompatibility(dish, members);
+  const key = `${dk}_${meal}`;
+
+  const memberBreakdown = members.map(mid => {
+    const m = DATA.members[mid];
+    const c = compat.members[mid];
+    const icon = c?.status==='like'?'✅':c?.status==='soso'?'🟡':'❌';
+    const reasons = c?.reasons?.join(', ') || 'Không có thông tin';
+    return `<div class="member-row">
+      <span class="m-icon">${m?.icon||''}</span>
+      <div class="m-info">
+        <div class="m-name">${m?.name||mid}</div>
+        <div class="m-reason">${reasons}</div>
+      </div>
+      <span class="m-vote">${icon}</span>
+    </div>`;
+  }).join('');
+
+  document.getElementById('modal-content').innerHTML = `
+    <div class="modal-handle"></div>
+    <img class="modal-img" src="${dishImage(dish)}" alt="${dish.nameVi}"
+      onerror="this.style.height='100px';this.style.background='var(--border)'">
+    <div class="modal-header">
+      <h2>${dish.nameVi}</h2>
+      <p>${dish.nameEn} · ${DATA.cuisineLabels[dish.cuisine]||dish.cuisine}</p>
+    </div>
+    <div class="modal-body">
+      <div class="detail-section">
+        <h3>📝 Mô tả</h3>
+        <p>${dish.desc}</p>
+      </div>
+      <div class="detail-section">
+        <h3>🥘 Nguyên liệu</h3>
+        <div class="ingredient-list">
+          ${dish.ingredients.map(ing => `<span class="ingredient-item">${ing}</span>`).join('')}
+        </div>
+      </div>
+      <div class="detail-section">
+        <h3>👨‍👩‍👧‍👦 Đánh giá theo thành viên</h3>
+        <div class="member-breakdown">${memberBreakdown}</div>
+      </div>
+      <div class="food-chips" style="margin:16px 0">
+        ${dish.spice > 0 ? `<span class="chip">🌶️ Cay: ${'🌶️'.repeat(dish.spice)}</span>` : '<span class="chip">Không cay</span>'}
+        <span class="chip">⏱️ ${dish.time}</span>
+        <span class="chip">💰 ${'₫'.repeat(dish.price)}</span>
+      </div>
+      <button class="btn-primary" style="width:100%" onclick="addToVote('${dishId}','${key}');closeModal()">
+        ➕ Thêm vào bỏ phiếu
+      </button>
+    </div>`;
+
+  document.getElementById('modal').classList.add('open');
+}
+
+function addToVote(dishId, key) {
+  // Initialize vote entry for this dish
+  if (!state.votes[key]) state.votes[key] = {};
+  if (!state.votes[key][dishId]) state.votes[key][dishId] = {};
+  saveState();
+  renderTodayView();
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+}
+
+// ═══════════════════════════════════════
+// RENDER: SEARCH
+// ═══════════════════════════════════════
+function renderSearch() {
+  renderSearchFilters();
+  renderRestaurants();
+}
+
+let activeFilters = { cuisine: null, district: null, rating: null, price: null };
+
+function renderSearchFilters() {
+  const cuisines = Object.entries(DATA.cuisineLabels);
+  const filters = [
+    ...DATA.districts.map(d => ({ label:`🗺️ ${d}`, type:'district', value:d })),
+    ...cuisines.map(([k,v]) => ({ label:`🍽️ ${v}`, type:'cuisine', value:k })),
+    { label:'⭐ 4.0+', type:'rating', value:4.0 },
+    { label:'⭐ 4.5+', type:'rating', value:4.5 },
+    { label:'💰 ₫', type:'price', value:1 },
+    { label:'💰 ₫₫', type:'price', value:2 },
+    { label:'💰 ₫₫₫', type:'price', value:3 },
+    { label:'🚗 Delivery', type:'delivery', value:true },
+  ];
+
+  document.getElementById('search-filters').innerHTML = filters.map(f => {
+    const isActive = activeFilters[f.type] === f.value;
+    return `<button class="filter-chip ${isActive?'active':''}"
+      onclick="toggleFilter('${f.type}',${typeof f.value==='string'?`'${f.value}'`:f.value})">${f.label}</button>`;
+  }).join('');
+}
+
+function toggleFilter(type, value) {
+  activeFilters[type] = activeFilters[type] === value ? null : value;
+  renderSearchFilters();
+  renderRestaurants();
+}
+
+function renderRestaurants(query) {
+  let restaurants = [...DATA.restaurants];
+
+  // Apply filters
+  if (activeFilters.cuisine) restaurants = restaurants.filter(r => r.cuisine === activeFilters.cuisine);
+  if (activeFilters.district) restaurants = restaurants.filter(r => r.district === activeFilters.district);
+  if (activeFilters.rating) restaurants = restaurants.filter(r => r.rating >= activeFilters.rating);
+  if (activeFilters.price) restaurants = restaurants.filter(r => r.price === activeFilters.price);
+  if (activeFilters.delivery) restaurants = restaurants.filter(r => r.delivery);
+
+  // Text search
+  if (query) {
+    const q = query.toLowerCase();
+    restaurants = restaurants.filter(r =>
+      r.name.toLowerCase().includes(q) ||
+      (DATA.cuisineLabels[r.cuisine]||'').toLowerCase().includes(q) ||
+      r.district.toLowerCase().includes(q)
+    );
+  }
+
+  // Calculate family compatibility for each restaurant
+  const allMembers = ['dad','mom','son','daughter'];
+
+  document.getElementById('search-results').innerHTML = restaurants.map((r, i) => {
+    // Average compatibility of menu items
+    const menuDishes = r.menu.map(id => DATA.dishes.find(d => d.id === id)).filter(Boolean);
+    let avgCompat = 0;
+    if (menuDishes.length > 0) {
+      const total = menuDishes.reduce((sum, d) => sum + calculateCompatibility(d, allMembers).avgPct, 0);
+      avgCompat = Math.round(total / menuDishes.length);
+    }
+    const compatClass = avgCompat >= 70 ? 'compat-high' : avgCompat >= 50 ? 'compat-med' : 'compat-low';
+
+    return `<div class="rest-card" style="animation-delay:${i*50}ms" onclick="openRestaurantModal(${i})">
+      <div class="rest-card-img-wrap">
+        <img class="rest-card-img" src="${restImage(r)}" alt="${r.name}" loading="lazy"
+          onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 300%22><rect fill=%22%23E8DDD0%22 width=%22400%22 height=%22300%22/><text x=%22200%22 y=%22150%22 text-anchor=%22middle%22 fill=%22%238B7355%22 font-size=%2240%22>🏪</text></svg>'">
+        <span class="rest-card-rating-badge">⭐ ${r.rating}</span>
+      </div>
+      <div class="rest-card-body">
+        <div class="rest-card-name">${r.name}</div>
+        <span class="cuisine-tag cuisine-${DATA.cuisineColors[r.cuisine]||'western'}" style="font-size:9px;padding:2px 6px">${DATA.cuisineLabels[r.cuisine]}</span>
+        <div class="rest-card-meta">
+          ${r.district} · ${'₫'.repeat(r.price)} ${r.delivery ? '· 🚗' : ''}
+        </div>
+        <span class="compat-overall ${compatClass}" style="font-size:10px;margin-top:4px;display:inline-block">👨‍👩‍👧‍👦 ${avgCompat}%</span>
+      </div>
+    </div>`;
+  }).join('') || '<div class="empty-state"><div class="empty-icon">🔍</div><p>Không tìm thấy nhà hàng</p></div>';
+}
+
+function openRestaurantModal(idx) {
+  let restaurants = [...DATA.restaurants];
+  if (activeFilters.cuisine) restaurants = restaurants.filter(r => r.cuisine === activeFilters.cuisine);
+  if (activeFilters.district) restaurants = restaurants.filter(r => r.district === activeFilters.district);
+  if (activeFilters.rating) restaurants = restaurants.filter(r => r.rating >= activeFilters.rating);
+  if (activeFilters.price) restaurants = restaurants.filter(r => r.price === activeFilters.price);
+  if (activeFilters.delivery) restaurants = restaurants.filter(r => r.delivery);
+
+  const r = restaurants[idx];
+  if (!r) return;
+
+  const allMembers = ['dad','mom','son','daughter'];
+  const menuDishes = r.menu.map(id => DATA.dishes.find(d => d.id === id)).filter(Boolean);
+
+  const menuHtml = menuDishes.map(d => {
+    const compat = calculateCompatibility(d, allMembers);
+    const overallClass = compat.avgPct >= 70 ? 'compat-high' : compat.avgPct >= 50 ? 'compat-med' : 'compat-low';
+    const memberBars = allMembers.map(mid => {
+      const m = DATA.members[mid];
+      const c = compat.members[mid];
+      const icon = c?.status==='like'?'✅':c?.status==='soso'?'🟡':'❌';
+      return `<span style="font-size:12px">${m?.icon||''}${icon}</span>`;
+    }).join(' ');
+
+    const dk = state.selectedDate ? dateKey(new Date(state.selectedDate)) : dateKey(new Date());
+    const meal = state.selectedMeal || 'dinner';
+    const key = `${dk}_${meal}`;
+
+    return `<div style="display:flex;align-items:center;gap:10px;padding:10px;background:var(--bg);border-radius:12px;margin-bottom:8px">
+      <img src="${dishImage(d)}" style="width:56px;height:56px;border-radius:10px;object-fit:cover"
+        onerror="this.style.display='none'" loading="lazy">
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:13px">${d.nameVi}</div>
+        <div style="font-size:11px;color:var(--muted)">${d.nameEn}</div>
+        <div style="margin-top:4px">${memberBars} <span class="compat-overall ${overallClass}" style="font-size:10px">${compat.avgPct}%</span></div>
+      </div>
+      <button class="btn-primary" style="padding:8px 12px;font-size:11px" onclick="addToVote('${d.id}','${key}');closeModal()">+ Vote</button>
+    </div>`;
+  }).join('');
+
+  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.name + ' ' + r.address + ' Hà Nội')}`;
+
+  document.getElementById('modal-content').innerHTML = `
+    <div class="modal-handle"></div>
+    <img class="modal-img" src="${restImage(r)}" alt="${r.name}"
+      onerror="this.style.height='100px';this.style.background='var(--border)'">
+    <div class="modal-header">
+      <h2>${r.name}</h2>
+      <p><span class="cuisine-tag cuisine-${DATA.cuisineColors[r.cuisine]||'western'}">${DATA.cuisineLabels[r.cuisine]}</span> ⭐ ${r.rating} · ${'₫'.repeat(r.price)}</p>
+    </div>
+    <div class="modal-body">
+      <div class="detail-section">
+        <p>📍 ${r.address}</p>
+        ${r.phone ? `<p>📞 ${r.phone}</p>` : ''}
+        <p>⏰ ${r.hours}</p>
+        ${r.delivery ? '<p>🚗 Có giao hàng</p>' : ''}
+        <a href="${mapsUrl}" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;color:var(--primary);font-weight:600;font-size:13px">📍 Mở Google Maps →</a>
+      </div>
+      <div class="detail-section">
+        <h3>🍽️ Thực đơn</h3>
+        ${menuHtml}
+      </div>
+    </div>`;
+
+  document.getElementById('modal').classList.add('open');
+}
+
+// ═══════════════════════════════════════
+// RENDER: HISTORY
+// ═══════════════════════════════════════
+function renderHistory() {
+  const history = [...state.mealHistory].sort((a,b) => b.timestamp - a.timestamp);
+
+  if (history.length === 0) {
+    document.getElementById('history-list').innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">📜</div>
+        <p>Chưa có lịch sử bữa ăn<br><span style="font-size:12px">No meal history yet</span></p>
+      </div>`;
+    return;
+  }
+
+  // Group by week
+  const weeks = {};
+  history.forEach(h => {
+    const d = new Date(h.timestamp);
+    const weekStart = new Date(d);
+    weekStart.setDate(d.getDate() - d.getDay());
+    const wk = dateKey(weekStart);
+    if (!weeks[wk]) weeks[wk] = [];
+    weeks[wk].push(h);
+  });
+
+  document.getElementById('history-list').innerHTML = Object.entries(weeks).map(([wk, items]) => {
+    const weekDate = new Date(wk);
+    return `<div class="history-week">
+      <h3>Tuần ${weekDate.getDate()}/${weekDate.getMonth()+1}</h3>
+      ${items.map(h => {
+        const dish = DATA.dishes.find(d => d.id === h.dishId);
+        const mealLabel = h.meal==='breakfast'?'Sáng':h.meal==='lunch'?'Trưa':'Tối';
+        return `<div class="history-item">
+          <img src="${dish ? dishImage(dish) : ''}" alt="" loading="lazy"
+            onerror="this.style.display='none'">
+          <div class="history-info">
+            <div class="h-dish">${dish?.nameVi || h.dishId}</div>
+            <div class="h-meta">${h.date} · ${mealLabel} · ${dish?.nameEn||''}</div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════
+function switchView(view) {
+  state.currentView = view;
+
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById(`view-${view}`).classList.add('active');
+
+  document.querySelectorAll('.nav-item').forEach((n, i) => {
+    n.classList.toggle('active', ['schedule','today','search','history'][i] === view);
+  });
+
+  if (view === 'schedule') renderWeekGrid();
+  else if (view === 'today') renderTodayView();
+  else if (view === 'search') renderSearch();
+  else if (view === 'history') renderHistory();
+}
+
+// ═══════════════════════════════════════
+// SEARCH INPUT
+// ═══════════════════════════════════════
+document.getElementById('search-input').addEventListener('input', function(e) {
+  renderRestaurants(e.target.value.trim());
+});
+
+// ═══════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════
+loadState();
+
+// Set today as default selected date
+if (!state.selectedDate) {
+  state.selectedDate = Date.now();
+  state.selectedMeal = 'dinner';
+}
+
+renderMemberSelector();
+renderWeekGrid();
+
+// Swipe modal to close
+let touchStartY = 0;
+document.getElementById('modal-content').addEventListener('touchstart', e => {
+  touchStartY = e.touches[0].clientY;
+});
+document.getElementById('modal-content').addEventListener('touchmove', e => {
+  const diff = e.touches[0].clientY - touchStartY;
+  if (diff > 80) closeModal();
+});
+
+</script>
+</body>
+</html>
