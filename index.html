@@ -516,13 +516,23 @@ body { padding-bottom: calc(var(--nav-height) + 16px); }
 .today-hero p { font-size:10px; opacity:.9; margin:0; }
 .meal-tabs { display:flex; gap:4px; margin-bottom:6px; }
 .meal-tab {
-  flex:1; padding:4px; border-radius:8px; border:2px solid var(--border);
-  background:var(--card); text-align:center; cursor:pointer; font-weight:600;
-  font-size:11px; transition:all .2s; font-family:var(--font-ui); min-height:28px;
-  position:relative; overflow:hidden;
+  display:flex; align-items:center; gap:3px; padding:3px 8px;
+  border-radius:8px; border:1.5px solid var(--border); background:var(--bg);
+  cursor:pointer; transition:all .2s; white-space:nowrap; min-height:30px;
+  user-select:none; font-weight:600; font-size:10px; font-family:var(--font-ui);
 }
-.meal-tab.active { border-color:var(--primary); background:rgba(232,82,26,.06); color:var(--primary); }
-.meal-tab .tab-icon { font-size:16px; display:block; }
+.meal-tab.active { border-color:var(--primary); background:rgba(232,82,26,0.08); }
+.meal-tab .tab-icon { font-size:14px; }
+.meal-tab .tab-name { font-size:10px; font-weight:700; color:var(--text); }
+.meal-tab .tab-sub { font-size:8px; color:var(--muted); }
+.meal-tab .tab-check {
+  width:14px; height:14px; border-radius:3px; border:1.5px solid var(--border);
+  display:flex; align-items:center; justify-content:center; font-size:9px;
+  transition:all .2s;
+}
+.meal-tab.active .tab-check {
+  background:var(--primary); border-color:var(--primary); color:#fff;
+}
 
 .section-title {
   font-family:var(--font-display); font-size:15px; margin:10px 0 6px;
@@ -1398,14 +1408,17 @@ function renderTodayView() {
   const heroCats = { breakfast:'dosa', lunch:'rice', dinner:'biryani' };
   if (heroEl) heroEl.src = `https://foodish-api.com/images/${heroCats[meal]}/${heroCats[meal]}${heroLock[meal]-45}.jpg`;
 
-  // Meal tabs
+  // Meal tabs (checkbox style)
   const slots = getMealSlots(date);
+  const mealNames = { breakfast:'Sáng', lunch:'Trưa', dinner:'Tối' };
+  const mealSubs = { breakfast:'Breakfast', lunch:'Lunch', dinner:'Dinner' };
+  const mealIcons = { breakfast:'🌅', lunch:'☀️', dinner:'🌙' };
   document.getElementById('meal-tabs').innerHTML = slots.map(sl => {
-    const icon = sl==='breakfast'?'🌅':sl==='lunch'?'☀️':'🌙';
-    const name = sl==='breakfast'?'Sáng':sl==='lunch'?'Trưa':'Tối';
-    return `<button class="meal-tab ${sl===meal?'active':''}" onclick="selectMealTab('${sl}')">
-      <span class="tab-icon">${icon}</span>${name}
-    </button>`;
+    return `<div class="meal-tab ${sl===meal?'active':''}" onclick="selectMealTab('${sl}')">
+      <div class="tab-check">${sl===meal?'✓':''}</div>
+      <span class="tab-icon">${mealIcons[sl]}</span>
+      <div><div class="tab-name">${mealNames[sl]}</div><div class="tab-sub">${mealSubs[sl]}</div></div>
+    </div>`;
   }).join('');
 
   // Members for this meal
@@ -1461,30 +1474,52 @@ function renderVoting(dk, meal, members) {
 
   document.getElementById('suggestions-title').style.display = '';
 
-  // Member selector + Suggest button
-  const avatarHtml = members.map(mid => {
-    const m = DATA.members[mid];
-    if (!m) return '';
-    const isActive = state.activeMember === mid;
-    return `<div class="voter-avatar ${isActive?'active':''}" onclick="setActiveVoter('${mid}')" title="${m.name}">
-      ${m.icon}
-    </div>`;
+  // Auto-generate combos based on active members from top checkboxes
+  const portionCount = getPortionCount();
+  const mealLabel = meal==='breakfast'?'sáng':meal==='lunch'?'trưa':'tối';
+  const combos = generateCombos(meal, members);
+
+  const combosHtml = combos.map((combo, ci) => {
+    const dishRows = combo.dishes.map(({ dish, pct, label }) => {
+      const img = dishImage(dish);
+      return `
+        <div class="combo-dish-row">
+          <img class="combo-dish-img" src="${img}" alt="${dish.nameVi}" loading="lazy" onerror="this.style.display='none'">
+          <div class="combo-dish-info">
+            <div class="combo-dish-role">${label}</div>
+            <div class="combo-dish-name">${dish.nameVi}</div>
+            <div class="combo-dish-sub">${dish.nameEn}</div>
+          </div>
+        </div>`;
+    }).join('');
+
+    const pctColor = combo.avgPct >= 70 ? 'var(--success)' : combo.avgPct >= 45 ? 'var(--amber)' : 'var(--danger)';
+    const comboIds = combo.dishes.map(d => d.dish.id).join(',');
+
+    return `
+      <div class="combo-card">
+        <div class="combo-card-header">
+          <div class="combo-card-title">Combo ${combo.index}</div>
+          <div class="combo-card-badge">${portionCount} người</div>
+        </div>
+        <div class="combo-dishes">${dishRows}</div>
+        <div class="combo-footer">
+          <span class="combo-compat" style="color:${pctColor}">♥ ${combo.avgPct}% phù hợp</span>
+          <button class="combo-select-btn" onclick="selectCombo('${key}','${comboIds}')">Chọn combo</button>
+        </div>
+      </div>`;
   }).join('');
 
-  const activeName = state.activeMember ? (DATA.members[state.activeMember]?.name || '') : '';
-
   document.getElementById('voting-section').innerHTML = `
-    <div class="voting-panel">
-      <div class="voting-title">🍽️ Chọn người để gợi ý thực đơn</div>
-      <div class="voter-avatars">${avatarHtml}</div>
-      <div class="consensus-text">${state.activeMember ? `Đang chọn: <strong>${activeName}</strong>` : 'Chạm avatar để chọn thành viên'}</div>
-      ${state.activeMember ? `<button class="lock-btn suggest-btn" onclick="suggestMenu('${dk}','${meal}')">✨ Gợi ý thực đơn cho ${activeName}</button>` : ''}
+    <div class="suggest-section">
+      <div class="suggest-header">
+        <span>🍽️ Combo bữa ${mealLabel} cho <strong>${portionCount} người</strong></span>
+        <button class="btn-outline btn-sm" onclick="shuffleCombos('${dk}','${meal}')">🔄 Đổi combo</button>
+      </div>
+      <div class="combo-scroll">${combosHtml}</div>
+      <p class="suggest-hint">Vuốt ngang để xem thêm combo • Chạm "Chọn combo" để chốt</p>
     </div>`;
-}
-
-function setActiveVoter(mid) {
-  state.activeMember = state.activeMember === mid ? null : mid;
-  renderTodayView();
+  document.getElementById('suggest-results').innerHTML = '';
 }
 
 function castVote(key, dishId, vote) {
@@ -1586,7 +1621,12 @@ function generateCombos(meal, members) {
     if (!byRole[s.role]) byRole[s.role] = [];
     byRole[s.role].push(s);
   });
-  Object.values(byRole).forEach(arr => arr.sort((a, b) => b.score - a.score));
+  Object.values(byRole).forEach(arr => {
+    // Add shuffle randomness if user clicked "Đổi combo"
+    const seed = state._shuffleSeed || 0;
+    arr.forEach(s => s.score += (Math.sin(seed * 13 + s.dish.id.length * 7) * 15));
+    arr.sort((a, b) => b.score - a.score);
+  });
 
   // Build 3 combos with different styles
   const combos = [];
@@ -1628,57 +1668,10 @@ function generateCombos(meal, members) {
   return combos;
 }
 
-function suggestMenu(dk, meal) {
-  const mid = state.activeMember;
-  if (!mid) return;
-  const member = DATA.members[mid];
-  const members = Object.keys(DATA.members).filter(m => state.activeMembers[m]);
-  const key = `${dk}_${meal}`;
-  const mealLabel = meal==='breakfast'?'sáng':meal==='lunch'?'trưa':'tối';
-  const portionCount = getPortionCount();
-
-  const combos = generateCombos(meal, members);
-
-  const combosHtml = combos.map((combo, ci) => {
-    const dishRows = combo.dishes.map(({ dish, pct, label }) => {
-      const img = dishImage(dish);
-      return `
-        <div class="combo-dish-row">
-          <img class="combo-dish-img" src="${img}" alt="${dish.nameVi}" loading="lazy" onerror="this.style.display='none'">
-          <div class="combo-dish-info">
-            <div class="combo-dish-role">${label}</div>
-            <div class="combo-dish-name">${dish.nameVi}</div>
-            <div class="combo-dish-sub">${dish.nameEn}</div>
-          </div>
-        </div>`;
-    }).join('');
-
-    const pctColor = combo.avgPct >= 70 ? 'var(--success)' : combo.avgPct >= 45 ? 'var(--amber)' : 'var(--danger)';
-    const comboIds = combo.dishes.map(d => d.dish.id).join(',');
-
-    return `
-      <div class="combo-card">
-        <div class="combo-card-header">
-          <div class="combo-card-title">Combo ${combo.index}</div>
-          <div class="combo-card-badge">${portionCount} người</div>
-        </div>
-        <div class="combo-dishes">${dishRows}</div>
-        <div class="combo-footer">
-          <span class="combo-compat" style="color:${pctColor}">♥ ${combo.avgPct}% phù hợp</span>
-          <button class="combo-select-btn" onclick="selectCombo('${key}','${comboIds}')">Chọn combo này</button>
-        </div>
-      </div>`;
-  }).join('');
-
-  document.getElementById('suggest-results').innerHTML = `
-    <div class="suggest-section">
-      <div class="suggest-header">
-        <span>🍽️ Combo bữa ${mealLabel} cho <strong>${portionCount} người</strong></span>
-        <button class="btn-outline btn-sm" onclick="document.getElementById('suggest-results').innerHTML=''">✕ Đóng</button>
-      </div>
-      <div class="combo-scroll">${combosHtml}</div>
-      <p class="suggest-hint">Vuốt ngang để xem thêm combo • Chạm "Chọn combo" để chốt</p>
-    </div>`;
+function shuffleCombos(dk, meal) {
+  // Add randomness by temporarily boosting random dishes
+  state._shuffleSeed = (state._shuffleSeed || 0) + 1;
+  renderTodayView();
 }
 
 function selectCombo(key, comboIds) {
