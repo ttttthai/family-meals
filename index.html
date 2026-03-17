@@ -259,6 +259,24 @@ body { padding-bottom: calc(var(--nav-height) + 16px); }
 .group-card-name { font-family:var(--font-display); font-size:14px; font-weight:700; }
 .group-card-preview { font-size:11px; color:var(--muted); margin-top:4px; line-height:1.3;
   display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+/* Suggest Menu */
+.suggest-section { padding:0 0 16px; }
+.suggest-header { display:flex; justify-content:space-between; align-items:center; padding:12px 0; font-size:15px; }
+.suggest-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+@media(min-width:600px) { .suggest-grid { grid-template-columns:repeat(4,1fr); } }
+.suggest-card { background:var(--card); border-radius:14px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,.08); cursor:pointer; transition:transform .15s; }
+.suggest-card:active { transform:scale(.97); }
+.suggest-card-img { position:relative; height:100px; overflow:hidden; }
+.suggest-card-img img { width:100%; height:100%; object-fit:cover; }
+.suggest-score { position:absolute; top:6px; right:6px; padding:2px 8px; border-radius:12px; color:#fff; font-size:11px; font-weight:700; }
+.repeat-badge { position:absolute; bottom:6px; left:6px; background:rgba(0,0,0,.6); color:#fff; font-size:10px; padding:2px 6px; border-radius:8px; }
+.suggest-card-body { padding:8px 10px; }
+.suggest-card-name { font-family:var(--font-display); font-size:13px; font-weight:700; line-height:1.2; }
+.suggest-card-sub { font-size:10px; color:var(--muted); margin-top:2px; }
+.suggest-card-meta { display:flex; justify-content:space-between; font-size:10px; color:var(--muted); margin-top:4px; }
+.suggest-hint { text-align:center; font-size:12px; color:var(--muted); margin-top:10px; }
+.suggest-btn { background:linear-gradient(135deg,var(--primary),var(--secondary))!important; }
+.btn-sm { font-size:12px; padding:4px 12px; }
 .group-header {
   display:flex; align-items:center; gap:12px; padding:8px 0 12px; cursor:pointer;
 }
@@ -536,6 +554,7 @@ body { padding-bottom: calc(var(--nav-height) + 16px); }
   </div>
   <div id="meal-tabs" class="meal-tabs"></div>
   <div id="voting-section"></div>
+  <div id="suggest-results"></div>
   <h3 class="section-title" id="suggestions-title">Gợi ý món ăn</h3>
   <div id="cuisine-filter" class="cuisine-filter"></div>
   <div id="food-suggestions"></div>
@@ -1353,54 +1372,30 @@ function renderVoting(dk, meal, members) {
       </div>`;
     document.getElementById('suggestions-title').style.display = 'none';
     document.getElementById('food-suggestions').innerHTML = '';
+    document.getElementById('suggest-results').innerHTML = '';
     return;
   }
 
   document.getElementById('suggestions-title').style.display = '';
 
-  // Voter avatars
+  // Member selector + Suggest button
   const avatarHtml = members.map(mid => {
     const m = DATA.members[mid];
     if (!m) return '';
     const isActive = state.activeMember === mid;
-    const voteKey = `${key}`;
-    const votes = state.votes[voteKey] || {};
-    // Show vote indicator on avatar
-    let indicator = '';
-    // Count how many dishes this member has voted on
-    const votedCount = Object.values(votes).filter(v => v[mid]).length;
-    if (votedCount > 0) indicator = `<span class="vote-indicator">${votedCount}</span>`;
-
     return `<div class="voter-avatar ${isActive?'active':''}" onclick="setActiveVoter('${mid}')" title="${m.name}">
-      ${m.icon}${indicator}
+      ${m.icon}
     </div>`;
   }).join('');
 
-  // Consensus bar
-  const votes = state.votes[key] || {};
-  const totalDishes = Object.keys(votes).length;
-  let bestDish = null, bestScore = -Infinity;
-  Object.entries(votes).forEach(([dishId, dv]) => {
-    let score = 0;
-    members.forEach(mid => {
-      if (dv[mid] === 'yes') score += 2;
-      else if (dv[mid] === 'maybe') score += 1;
-      else if (dv[mid] === 'no') score -= 1;
-    });
-    if (score > bestScore) { bestScore = score; bestDish = dishId; }
-  });
-
-  const maxScore = members.length * 2;
-  const consensusPct = totalDishes > 0 ? Math.max(0, Math.round((bestScore / maxScore) * 100)) : 0;
+  const activeName = state.activeMember ? (DATA.members[state.activeMember]?.name || '') : '';
 
   document.getElementById('voting-section').innerHTML = `
     <div class="voting-panel">
-      <div class="voting-title">👨‍👩‍👧‍👦 Bỏ phiếu — Chọn người rồi vote trên thẻ món</div>
+      <div class="voting-title">🍽️ Chọn người để gợi ý thực đơn</div>
       <div class="voter-avatars">${avatarHtml}</div>
-      <div class="consensus-bar"><div class="consensus-fill" style="width:${consensusPct}%"></div></div>
-      <div class="consensus-text">${consensusPct > 0 ? `Đồng thuận: ${consensusPct}%` : 'Chạm avatar để bắt đầu bỏ phiếu'}</div>
-      ${bestDish && consensusPct >= 80 ? `<button class="lock-btn" onclick="lockMeal('${key}','${bestDish}')">✅ Chốt: ${DATA.dishes.find(d=>d.id===bestDish)?.nameVi || bestDish}</button>` : ''}
-      ${totalDishes > 0 && consensusPct < 80 && consensusPct > 0 ? `<button class="lock-btn" style="background:var(--amber)" onclick="lockMeal('${key}','${bestDish}')">🤝 Chọn thỏa hiệp: ${DATA.dishes.find(d=>d.id===bestDish)?.nameVi || bestDish}</button>` : ''}
+      <div class="consensus-text">${state.activeMember ? `Đang chọn: <strong>${activeName}</strong>` : 'Chạm avatar để chọn thành viên'}</div>
+      ${state.activeMember ? `<button class="lock-btn suggest-btn" onclick="suggestMenu('${dk}','${meal}')">✨ Gợi ý thực đơn cho ${activeName}</button>` : ''}
     </div>`;
 }
 
@@ -1469,6 +1464,70 @@ function unlockMeal(key) {
   saveState();
   renderTodayView();
   renderWeekGrid();
+}
+
+// ═══════════════════════════════════════
+// SUGGEST MENU (personalized)
+// ═══════════════════════════════════════
+function suggestMenu(dk, meal) {
+  const mid = state.activeMember;
+  if (!mid) return;
+  const member = DATA.members[mid];
+  const taste = DATA.tastes[mid];
+
+  // Filter dishes for this meal time
+  const eligible = DATA.dishes.filter(d => d.meal.includes(meal));
+
+  // Score each dish for this person
+  const scored = eligible.map(d => {
+    const compat = calculateCompatibility(d, [mid]);
+    const pct = compat.members[mid]?.pct || 50;
+    // Penalize recently eaten dishes
+    const repeat = getRepeatInfo(d.id);
+    let penalty = 0;
+    if (repeat) {
+      if (repeat.isRecent) penalty = 30;
+      else penalty = 10;
+    }
+    return { dish: d, score: pct - penalty, pct, repeat };
+  });
+
+  // Sort by score descending, pick top 8
+  scored.sort((a, b) => b.score - a.score);
+  const top = scored.slice(0, 8);
+
+  const key = `${dk}_${meal}`;
+  const cardsHtml = top.map(({ dish, pct, repeat }) => {
+    const img = dishImage(dish);
+    const repeatBadge = repeat ? `<span class="repeat-badge">🔄 ${repeat.daysAgo}d ago</span>` : '';
+    const pctColor = pct >= 70 ? 'var(--success)' : pct >= 45 ? 'var(--amber)' : 'var(--danger)';
+    return `
+      <div class="suggest-card" onclick="lockMeal('${key}','${dish.id}')">
+        <div class="suggest-card-img">
+          <img src="${img}" alt="${dish.nameVi}" loading="lazy" onerror="this.src='https://foodish-api.com/images/rice/rice1.jpg'">
+          <span class="suggest-score" style="background:${pctColor}">${pct}%</span>
+          ${repeatBadge}
+        </div>
+        <div class="suggest-card-body">
+          <div class="suggest-card-name">${dish.nameVi}</div>
+          <div class="suggest-card-sub">${dish.nameEn}</div>
+          <div class="suggest-card-meta">
+            <span>${dish.time}</span>
+            <span>${'💰'.repeat(dish.price)}</span>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+
+  document.getElementById('suggest-results').innerHTML = `
+    <div class="suggest-section">
+      <div class="suggest-header">
+        <span>✨ Top gợi ý cho <strong>${member.icon} ${member.name}</strong></span>
+        <button class="btn-outline btn-sm" onclick="document.getElementById('suggest-results').innerHTML=''">✕ Đóng</button>
+      </div>
+      <div class="suggest-grid">${cardsHtml}</div>
+      <p class="suggest-hint">Chạm vào món để chốt cho bữa ${meal==='breakfast'?'sáng':meal==='lunch'?'trưa':'tối'}</p>
+    </div>`;
 }
 
 // ═══════════════════════════════════════
