@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: family-meals
+    runtime: static
+    buildCommand: echo "Static site, no build needed"
+    staticPublishPath: .
+    pullRequestPreviewsEnabled: true
