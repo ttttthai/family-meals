@@ -1082,56 +1082,105 @@ function getMealSlots(date) {
   return slots;
 }
 
+// Curated food image pools from TheMealDB (real food photos)
+const FOOD_IMGS = {
+  pho: ['pbzcrx1763765096','st9shl1763755808','ntafxw1763586291'],
+  noodle_soup: ['ikizdm1763760862','118oj61763423896','ip5xtp1769779958','568t931763584227'],
+  noodle_stir: ['1529444830','rg9ze01763479093','6g3rso1763486069','2wx8cm1763373419','f3cxnc1765656994','zry07j1763779321'],
+  rice: ['5r5rvx1763287943','wuyd2h1765655837','kw92t41604181871','qt4i0n1763256454','fk80jp1763280767','hblwvg1763478203'],
+  sushi: ['g046bb1663960946'],
+  taco: ['uvuyxu1503067369','ypxvwv1505333929'],
+  curry: ['sstssx1487349585','sywrsu1511463066','vwrpps1503068729','tvttqv1504640475','0dhtwr1763371444','qqlwv91763501559'],
+  soup: ['x2fw9e1560460636','7n8su21699013057','xvrrux1511783685','1529445893','1brbso1763585098','stpuws1511191310'],
+  chicken: ['wyxwsp1486979827','tyywsw1505930373','qptpvt1487339892','1525872624','cj56fs1762340001','sypxpx1515365095'],
+  beef: ['pkopc31683207682','vussxq1511882648','1529443236','vvpprx1487325699','619789840'],
+  pork: ['lwsnkl1604181187','1529442316','g7jomp1763763994','7vpsfp1608588991'],
+  seafood: ['xxyupu1468262513','1529445434','rvypwy1503069308','1549542994','1548772327'],
+  salad: ['1549542994','z458v91763817681','93iok31766436070','6cskio1763338156','0iryz91763778419'],
+  steak: ['vussxq1511882648','qysyss1511558054'],
+  dumpling: ['sfahy01763752319','45xxr21593348847'],
+  pancake: ['rwuyqx1511383174','sywswr1511383814','c400ok1764439058'],
+  dessert: ['tqtywx1468317395','twspvx1511784937','xrysxr1483568462','qxutws1486978099','uttuxy1511382180','1550442508'],
+  pizza: ['pizza'],  // keep foodish for pizza
+  pasta: ['pasta'],  // keep foodish for pasta
+  burger: ['burger'] // keep foodish for burger
+};
+const MEALDB = 'https://www.themealdb.com/images/media/meals/';
+
 function dishImage(dish) {
   const hash = Math.abs(dish.id.split('').reduce((a,c) => ((a << 5) - a) + c.charCodeAt(0), 0));
   const name = (dish.nameVi + ' ' + dish.nameEn + ' ' + dish.id).toLowerCase();
   const tags = dish.tags || [];
 
-  // Match dish content to best foodish category
-  // Valid: rice, pasta, pizza, burger, biryani, dosa, samosa, dessert
-  let cat = null;
-  if (name.match(/pizza/)) cat = 'pizza';
-  else if (name.match(/pasta|spaghetti|fettuccine|lasagna|carbonara|bolognese|penne/)) cat = 'pasta';
-  else if (name.match(/burger|hamburger/)) cat = 'burger';
-  else if (name.match(/biryani|cà ri|curry|masala|tikka|tandoori|enchilada/)) cat = 'biryani';
-  else if (name.match(/tiramisu|fondant|chocolate|mousse|crème|tart|pudding|cheesecake|dessert|kem |ice cream|panna cotta|chè |flan|churros/)) cat = 'dessert';
-  else if (name.match(/samosa|nem rán|chả giò|spring roll|tempura|croquette|bánh rán|nem chua|gỏi cuốn/)) cat = 'samosa';
-  else if (name.match(/taco|burrito|wrap|quesadilla|nachos|dosa|bánh xèo|bánh cuốn|bánh căn|bánh bèo|bánh khọt|bánh cống|crêpe|pancake|waffle|bánh tôm|bánh giò|quiche/)) cat = 'dosa';
-  else if (name.match(/phở|bún|mì |miến|mì quảng|cao lầu|hủ tiếu|bánh canh|bánh đa|noodle|udon|ramen|soba|pad thai|khao soi|vermicelli/)) cat = 'pasta';
-  else if (name.match(/cơm|rice|risotto|xôi|omurice|donburi|gyudon|bibimbap/)) cat = 'rice';
-  else if (name.match(/steak|bò bít tết|sandwich|bánh mì/)) cat = 'burger';
-  else if (name.match(/sushi|sashimi/)) cat = 'rice';
-  else if (name.match(/salad|gỏi/)) cat = 'rice';
-  else if (name.match(/soup|súp|canh|cháo|lẩu|hotpot|chowder/)) cat = 'biryani';
-  else if (name.match(/chiên|rán|fried|katsu|nugget|chicken/)) cat = 'samosa';
-  else if (name.match(/nướng|grilled|roast|gà |thịt |bò |cá |tôm |fish|beef|pork|lamb|duck/)) cat = 'biryani';
-  else if (name.match(/fondue|phô mai|cheese/)) cat = 'pasta';
-  else if (tags.includes('pizza')) cat = 'pizza';
+  let pool = null;
 
-  // Fallback: match by cuisine
-  if (!cat) {
-    const cuisineMap = {
-      vietnamese:'rice', japanese:'rice', korean:'biryani', italian:'pasta',
-      french:'dessert', indian:'biryani', mexican:'dosa', chinese:'rice',
-      thai:'biryani', street:'samosa', western:'burger'
-    };
-    cat = cuisineMap[dish.cuisine] || 'rice';
+  // Pizza, pasta, burger → foodish (good match)
+  if (name.match(/pizza/) || tags.includes('pizza')) {
+    const n = (hash % 15) + 1;
+    return `https://foodish-api.com/images/pizza/pizza${n}.jpg`;
+  }
+  if (name.match(/pasta|spaghetti|fettuccine|lasagna|carbonara|bolognese|penne|gnocchi|risotto/)) {
+    const n = (hash % 15) + 1;
+    return `https://foodish-api.com/images/pasta/pasta${n}.jpg`;
+  }
+  if (name.match(/burger|hamburger/)) {
+    const n = (hash % 15) + 1;
+    return `https://foodish-api.com/images/burger/burger${n}.jpg`;
   }
 
-  const imgNum = (hash % 15) + 1;
-  return `https://foodish-api.com/images/${cat}/${cat}${imgNum}.jpg`;
+  // TheMealDB pools for everything else
+  if (name.match(/phở|pho/)) pool = 'pho';
+  else if (name.match(/bún|miến|mì quảng|cao lầu|hủ tiếu|bánh canh|bánh đa|bún riêu|bún cá|bún mắm|bún quậy/)) pool = 'noodle_soup';
+  else if (name.match(/mì |ramen|udon|soba|pad thai|khao soi|lo mein|japchae|jajang/)) pool = 'noodle_stir';
+  else if (name.match(/noodle|vermicelli/) && name.match(/soup|canh/)) pool = 'noodle_soup';
+  else if (name.match(/noodle|vermicelli/)) pool = 'noodle_stir';
+  else if (name.match(/sushi|sashimi|chirashi/)) pool = 'sushi';
+  else if (name.match(/taco|burrito|quesadilla|nachos|birria|campechano/)) pool = 'taco';
+  else if (name.match(/cà ri|curry|masala|tikka|tandoori/)) pool = 'curry';
+  else if (name.match(/tiramisu|fondant|chocolate|mousse|crème|tart|pudding|cheesecake|kem |ice cream|panna cotta|chè |flan|churros|dessert|hotteok|bánh flan/)) pool = 'dessert';
+  else if (name.match(/pancake|waffle|crêpe|bánh xèo|bánh cuốn|bánh căn|bánh bèo|bánh khọt|bánh cống|okonomiyaki|dosa|quiche/)) pool = 'pancake';
+  else if (name.match(/canh|súp|soup|cháo|congee|porridge|chowder/)) pool = 'soup';
+  else if (name.match(/lẩu|hotpot|fondue/)) pool = 'soup';
+  else if (name.match(/salad|gỏi|bánh tráng trộn/)) pool = 'salad';
+  else if (name.match(/steak|bò bít tết|wellington/)) pool = 'steak';
+  else if (name.match(/gyoza|há cảo|dimsum|dumpling|nem rán|chả giò|spring roll|gỏi cuốn/)) pool = 'dumpling';
+  else if (name.match(/cơm|rice|xôi|omurice|donburi|gyudon|bibimbap|kimbap|onigiri|com tam/)) pool = 'rice';
+  else if (name.match(/tôm|shrimp|cá |fish|mực|squid|hải sản|seafood|salmon|cá hồi|nghêu|cua|sò|bạch tuộc|tempura/) || tags.includes('fresh_seafood') || tags.includes('raw_seafood')) pool = 'seafood';
+  else if (name.match(/gà |chicken|ga nuong|chiên|rán|fried|katsu|nugget|takoyaki|karaage/) || name.match(/korean fried/)) pool = 'chicken';
+  else if (name.match(/bò |beef|thịt bò|bulgogi|galbi|bo la lot/) && !name.match(/phở/)) pool = 'beef';
+  else if (name.match(/heo|pork|thịt |sườn|carnitas|chorizo|samgyeopsal|ba chỉ/) || tags.includes('pork')) pool = 'pork';
+  else if (name.match(/sandwich|bánh mì|bread|croissant|bánh tôm|bánh giò/)) pool = 'pancake';
+  else if (name.match(/nướng|grilled|roast/)) pool = 'beef';
+
+  // Fallback by cuisine
+  if (!pool) {
+    const cuisinePool = {
+      vietnamese:'rice', japanese:'seafood', korean:'rice', italian:'pasta',
+      french:'dessert', indian:'curry', mexican:'taco', chinese:'rice',
+      thai:'curry', street:'chicken', western:'beef'
+    };
+    pool = cuisinePool[dish.cuisine] || 'rice';
+  }
+
+  // For foodish pools (pizza/pasta/burger), already handled above
+  const imgs = FOOD_IMGS[pool];
+  if (!imgs) return `https://foodish-api.com/images/rice/rice${(hash%15)+1}.jpg`;
+  const pick = imgs[hash % imgs.length];
+  return `${MEALDB}${pick}.jpg`;
 }
 
 function restImage(r) {
   const hash = Math.abs(r.name.split('').reduce((a,c) => ((a << 5) - a) + c.charCodeAt(0), 0));
-  const cuisineMap = {
-    vietnamese:'rice', japanese:'rice', korean:'biryani', italian:'pizza',
-    french:'dessert', indian:'biryani', mexican:'burger', chinese:'rice',
-    thai:'rice', street:'samosa', western:'burger'
+  const poolMap = {
+    vietnamese:'rice', japanese:'seafood', korean:'rice', italian:'pizza',
+    french:'dessert', indian:'curry', mexican:'taco', chinese:'rice',
+    thai:'curry', street:'chicken', western:'beef'
   };
-  const cat = cuisineMap[r.cuisine] || 'rice';
-  const imgNum = (hash % 15) + 1;
-  return `https://foodish-api.com/images/${cat}/${cat}${imgNum}.jpg`;
+  const pool = poolMap[r.cuisine] || 'rice';
+  if (pool === 'pizza') { const n=(hash%15)+1; return `https://foodish-api.com/images/pizza/pizza${n}.jpg`; }
+  const imgs = FOOD_IMGS[pool];
+  if (!imgs) return `${MEALDB}${FOOD_IMGS.rice[hash % FOOD_IMGS.rice.length]}.jpg`;
+  return `${MEALDB}${imgs[hash % imgs.length]}.jpg`;
 }
 
 // ═══════════════════════════════════════
