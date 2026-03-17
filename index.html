@@ -9,17 +9,17 @@
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 <style>
 :root {
-  --primary: #E8521A;
-  --primary-light: #FF7A45;
-  --secondary: #2D5016;
-  --secondary-light: #4A7A2E;
-  --bg: #FFF9F4;
+  --primary: #16A34A;
+  --primary-light: #4ADE80;
+  --secondary: #15803D;
+  --secondary-light: #22C55E;
+  --bg: #F0FDF4;
   --card: #FFFFFF;
-  --text: #1A1A1A;
-  --muted: #8B7355;
-  --border: #F0E6D9;
-  --shadow: 0 4px 20px rgba(232,82,26,0.08);
-  --shadow-lg: 0 8px 40px rgba(232,82,26,0.12);
+  --text: #14532D;
+  --muted: #6B8C7A;
+  --border: #D1FAE5;
+  --shadow: 0 4px 20px rgba(22,163,74,0.08);
+  --shadow-lg: 0 8px 40px rgba(22,163,74,0.12);
   --radius: 16px;
   --radius-lg: 24px;
   --font-ui: 'Nunito', sans-serif;
@@ -31,11 +31,11 @@
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #1A1208;
-    --card: #2A1F10;
-    --text: #F5ECD7;
-    --muted: #A89478;
-    --border: #3D2E1A;
+    --bg: #071A0E;
+    --card: #0F2A18;
+    --text: #D1FAE5;
+    --muted: #7AAF8E;
+    --border: #1A3D25;
     --shadow: 0 4px 20px rgba(0,0,0,0.3);
     --shadow-lg: 0 8px 40px rgba(0,0,0,0.4);
   }
@@ -67,12 +67,26 @@ body { padding-bottom: calc(var(--nav-height) + 16px); }
 
 /* ═══ HEADER ═══ */
 .app-header {
-  background: linear-gradient(135deg, var(--primary), #D4451A);
+  background: linear-gradient(135deg, var(--primary), #15803D);
   color:#fff; padding:8px 12px; position:sticky; top:0; z-index:100;
   display:flex; align-items:center; gap:8px;
 }
 .app-title { font-family:var(--font-display); font-size:16px; font-weight:700; }
-.app-subtitle { font-size:10px; opacity:.85; }
+.app-subtitle { font-size:10px; opacity:.85; flex:1; }
+.theme-btn { background:rgba(255,255,255,.25); border:none; border-radius:8px; padding:4px 8px; cursor:pointer; font-size:14px; color:#fff; transition:all .2s; }
+.theme-btn:hover { background:rgba(255,255,255,.4); }
+.theme-picker { display:none; position:fixed; inset:0; z-index:999; background:rgba(0,0,0,.5); justify-content:center; align-items:center; }
+.theme-picker.open { display:flex; }
+.theme-picker-panel { background:var(--card); border-radius:16px; padding:16px; width:90%; max-width:340px; box-shadow:var(--shadow-lg); }
+.theme-picker-title { font-family:var(--font-display); font-size:16px; font-weight:700; margin-bottom:12px; text-align:center; }
+.theme-option { display:flex; align-items:center; gap:10px; padding:10px; border-radius:10px; border:2px solid var(--border); margin-bottom:8px; cursor:pointer; transition:all .2s; }
+.theme-option:hover { transform:scale(1.02); }
+.theme-option.active { border-color:var(--primary); background:rgba(22,163,74,0.06); }
+.theme-swatch { display:flex; gap:3px; }
+.theme-swatch span { width:20px; height:20px; border-radius:50%; border:1px solid rgba(0,0,0,.1); }
+.theme-option-info { flex:1; }
+.theme-option-name { font-weight:700; font-size:13px; }
+.theme-option-desc { font-size:10px; color:var(--muted); }
 
 /* ═══ MEMBER SELECTOR ═══ */
 .member-selector {
@@ -88,7 +102,7 @@ body { padding-bottom: calc(var(--nav-height) + 16px); }
   user-select:none;
 }
 .member-box.active {
-  border-color:var(--primary); background:rgba(232,82,26,0.08);
+  border-color:var(--primary); background:rgba(22,163,74,0.08);
 }
 .member-box .mb-icon { font-size:14px; }
 .member-box .mb-name { font-size:10px; font-weight:700; color:var(--text); }
@@ -143,15 +157,25 @@ body { padding-bottom: calc(var(--nav-height) + 16px); }
 .day-card-body { padding:6px 8px; }
 .day-card .day-icons { display:flex; gap:3px; flex-wrap:wrap; margin-bottom:4px; font-size:11px; }
 .meal-slot {
-  display:flex; align-items:center; gap:4px; padding:4px 6px; margin:2px 0;
-  background:var(--bg); border-radius:8px; font-size:11px; font-weight:600;
-  cursor:pointer; transition:all .2s; min-height:32px;
+  display:flex; align-items:center; gap:3px; padding:3px 8px; margin:2px 0;
+  border-radius:8px; border:1.5px solid var(--border); background:var(--bg);
+  cursor:pointer; transition:all .2s; min-height:30px;
+  user-select:none; font-size:11px; font-weight:600;
 }
-.meal-slot:hover { background:var(--border); transform:scale(1.02); }
-.meal-slot.locked { border:2px solid var(--green); background:rgba(34,197,94,.06); }
+.meal-slot:hover { background:rgba(22,163,74,0.04); }
+.meal-slot.locked { border-color:var(--green); background:rgba(34,197,94,.06); }
+.meal-slot .slot-check {
+  width:14px; height:14px; border-radius:3px; border:1.5px solid var(--border);
+  display:flex; align-items:center; justify-content:center; font-size:9px;
+  transition:all .2s; flex-shrink:0;
+}
+.meal-slot.locked .slot-check {
+  background:var(--green); border-color:var(--green); color:#fff;
+}
 .meal-slot .slot-icon { font-size:14px; }
 .meal-slot .slot-info { flex:1; }
-.meal-slot .slot-name { font-size:10px; color:var(--muted); }
+.meal-slot .slot-name { font-size:10px; font-weight:700; color:var(--text); }
+.meal-slot .slot-sub { font-size:8px; color:var(--muted); }
 .meal-slot .slot-dish { font-size:11px; font-weight:700; color:var(--secondary); }
 .meal-slot .slot-thumb { width:36px; height:36px; border-radius:8px; object-fit:cover; }
 .portion-badge {
@@ -229,11 +253,11 @@ body { padding-bottom: calc(var(--nav-height) + 16px); }
 }
 .cuisine-pill.active {
   background:var(--primary); color:#fff; border-color:var(--primary);
-  box-shadow:0 2px 8px rgba(232,82,26,.3);
+  box-shadow:0 2px 8px rgba(22,163,74,.3);
 }
 .cuisine-pill.type-pill.active {
   background:var(--secondary); border-color:var(--secondary);
-  box-shadow:0 2px 8px rgba(45,80,22,.3);
+  box-shadow:0 2px 8px rgba(21,128,61,.3);
 }
 .cuisine-pill:not(.active):hover { border-color:var(--primary); color:var(--primary); }
 .group-grid {
@@ -394,7 +418,7 @@ body { padding-bottom: calc(var(--nav-height) + 16px); }
   justify-content:center; font-size:18px; background:var(--bg); border:2px solid var(--border);
   cursor:pointer; transition:all .2s; position:relative;
 }
-.voter-avatar.active { border-color:var(--primary); box-shadow:0 0 0 3px rgba(232,82,26,.2); }
+.voter-avatar.active { border-color:var(--primary); box-shadow:0 0 0 3px rgba(22,163,74,.2); }
 .voter-avatar .vote-indicator {
   position:absolute; bottom:-4px; right:-4px; font-size:14px;
   background:var(--card); border-radius:50%; width:22px; height:22px;
@@ -408,7 +432,7 @@ body { padding-bottom: calc(var(--nav-height) + 16px); }
   display:flex; align-items:center; justify-content:center; padding:8px 14px;
 }
 .vote-btn:hover { border-color:var(--primary); }
-.vote-btn.selected { border-color:var(--primary); background:rgba(232,82,26,.08); transform:scale(1.1); }
+.vote-btn.selected { border-color:var(--primary); background:rgba(22,163,74,.08); transform:scale(1.1); }
 .consensus-bar {
   height:8px; background:var(--border); border-radius:4px; overflow:hidden; margin:10px 0;
 }
@@ -500,20 +524,20 @@ body { padding-bottom: calc(var(--nav-height) + 16px); }
 
 /* ═══ TODAY VIEW HEADER ═══ */
 .today-hero {
-  position:relative; border-radius:10px; overflow:hidden;
-  height:44px; margin-bottom:6px;
+  position:relative; border-radius:8px; overflow:hidden;
+  height:28px; margin-bottom:4px;
 }
 .today-hero img {
   width:100%; height:100%; object-fit:cover;
 }
 .today-hero-overlay {
   position:absolute; inset:0;
-  background:linear-gradient(135deg, rgba(232,82,26,.85), rgba(45,80,22,.7));
+  background:linear-gradient(135deg, rgba(22,163,74,.85), rgba(21,128,61,.7));
   display:flex; flex-direction:row; justify-content:center; align-items:center;
-  color:#fff; text-align:center; padding:4px 12px; gap:8px;
+  color:#fff; text-align:center; padding:2px 10px; gap:6px;
 }
-.today-hero h2 { font-family:var(--font-display); font-size:15px; text-shadow:0 1px 4px rgba(0,0,0,.2); }
-.today-hero p { font-size:10px; opacity:.9; margin:0; }
+.today-hero h2 { font-family:var(--font-display); font-size:12px; text-shadow:0 1px 4px rgba(0,0,0,.2); margin:0; }
+.today-hero p { font-size:9px; opacity:.9; margin:0; }
 .meal-tabs { display:flex; gap:4px; margin-bottom:6px; }
 .meal-tab {
   display:flex; align-items:center; gap:3px; padding:3px 8px;
@@ -521,7 +545,7 @@ body { padding-bottom: calc(var(--nav-height) + 16px); }
   cursor:pointer; transition:all .2s; white-space:nowrap; min-height:30px;
   user-select:none; font-weight:600; font-size:10px; font-family:var(--font-ui);
 }
-.meal-tab.active { border-color:var(--primary); background:rgba(232,82,26,0.08); }
+.meal-tab.active { border-color:var(--primary); background:rgba(22,163,74,0.08); }
 .meal-tab .tab-icon { font-size:14px; }
 .meal-tab .tab-name { font-size:10px; font-weight:700; color:var(--text); }
 .meal-tab .tab-sub { font-size:8px; color:var(--muted); }
@@ -565,7 +589,15 @@ body { padding-bottom: calc(var(--nav-height) + 16px); }
 <header class="app-header">
   <div class="app-title">🍜 Bữa Cơm Gia Đình</div>
   <div class="app-subtitle">Family Meal Planner — Hà Nội</div>
+  <button class="theme-btn" onclick="toggleThemePicker()" title="Change theme">🎨</button>
 </header>
+
+<div class="theme-picker" id="theme-picker" onclick="if(event.target===this)toggleThemePicker()">
+  <div class="theme-picker-panel">
+    <div class="theme-picker-title">Chọn giao diện</div>
+    <div id="theme-options"></div>
+  </div>
+</div>
 
 <!-- ═══ MEMBER SELECTOR ═══ -->
 <div class="member-selector" id="member-selector"></div>
@@ -631,6 +663,111 @@ body { padding-bottom: calc(var(--nav-height) + 16px); }
 </nav>
 
 <script>
+// ═══════════════════════════════════════
+// THEMES
+// ═══════════════════════════════════════
+const THEMES = {
+  teal: {
+    name: 'Blue/Teal', desc: 'Clean, modern', icon: '🌊',
+    colors: ['#0891B2','#155E75','#F0F9FF'],
+    vars: { '--primary':'#0891B2','--primary-light':'#22D3EE','--secondary':'#155E75','--secondary-light':'#0E7490',
+      '--bg':'#F0F9FF','--card':'#FFFFFF','--text':'#164E63','--muted':'#6B8A99','--border':'#D4ECF7' },
+    dark: { '--bg':'#0C1A22','--card':'#132D3A','--text':'#D4ECF7','--muted':'#7BA3B5','--border':'#1E3A4A' }
+  },
+  purple: {
+    name: 'Purple/Lavender', desc: 'Soft, elegant', icon: '💜',
+    colors: ['#7C3AED','#5B21B6','#F5F3FF'],
+    vars: { '--primary':'#7C3AED','--primary-light':'#A78BFA','--secondary':'#5B21B6','--secondary-light':'#6D28D9',
+      '--bg':'#F5F3FF','--card':'#FFFFFF','--text':'#3B0764','--muted':'#8B7AA8','--border':'#E9E0FD' },
+    dark: { '--bg':'#110C22','--card':'#1E1535','--text':'#E9E0FD','--muted':'#9B8ABF','--border':'#2D1F4A' }
+  },
+  green: {
+    name: 'Green/Nature', desc: 'Fresh, organic', icon: '🌿',
+    colors: ['#16A34A','#15803D','#F0FDF4'],
+    vars: { '--primary':'#16A34A','--primary-light':'#4ADE80','--secondary':'#15803D','--secondary-light':'#22C55E',
+      '--bg':'#F0FDF4','--card':'#FFFFFF','--text':'#14532D','--muted':'#6B8C7A','--border':'#D1FAE5' },
+    dark: { '--bg':'#071A0E','--card':'#0F2A18','--text':'#D1FAE5','--muted':'#7AAF8E','--border':'#1A3D25' }
+  },
+  pink: {
+    name: 'Pink/Rose', desc: 'Warm, playful', icon: '🌸',
+    colors: ['#E11D73','#9D174D','#FFF1F2'],
+    vars: { '--primary':'#E11D73','--primary-light':'#FB7185','--secondary':'#9D174D','--secondary-light':'#BE185D',
+      '--bg':'#FFF1F2','--card':'#FFFFFF','--text':'#4C0519','--muted':'#9E7083','--border':'#FFE4E6' },
+    dark: { '--bg':'#1A070D','--card':'#2A1019','--text':'#FFE4E6','--muted':'#BF8A9C','--border':'#3D1525' }
+  },
+  dark: {
+    name: 'Dark/Moody', desc: 'Dark with amber accent', icon: '🌙',
+    colors: ['#F59E0B','#D97706','#18181B'],
+    vars: { '--primary':'#F59E0B','--primary-light':'#FBBF24','--secondary':'#D97706','--secondary-light':'#E5A00D',
+      '--bg':'#18181B','--card':'#27272A','--text':'#FAFAFA','--muted':'#A1A1AA','--border':'#3F3F46' },
+    dark: { '--bg':'#18181B','--card':'#27272A','--text':'#FAFAFA','--muted':'#A1A1AA','--border':'#3F3F46' }
+  },
+  sunset: {
+    name: 'Sunset/Warm', desc: 'Golden hour vibes', icon: '🌅',
+    colors: ['#EA580C','#C2410C','#FFF7ED'],
+    vars: { '--primary':'#EA580C','--primary-light':'#FB923C','--secondary':'#C2410C','--secondary-light':'#D4560E',
+      '--bg':'#FFF7ED','--card':'#FFFFFF','--text':'#431407','--muted':'#9A7B6B','--border':'#FFEDD5' },
+    dark: { '--bg':'#1A0E07','--card':'#2A1A0F','--text':'#FFEDD5','--muted':'#B8977E','--border':'#3D2415' }
+  },
+  ocean: {
+    name: 'Ocean/Deep', desc: 'Deep sea calm', icon: '🐳',
+    colors: ['#2563EB','#1D4ED8','#EFF6FF'],
+    vars: { '--primary':'#2563EB','--primary-light':'#60A5FA','--secondary':'#1D4ED8','--secondary-light':'#3B82F6',
+      '--bg':'#EFF6FF','--card':'#FFFFFF','--text':'#1E3A5F','--muted':'#6B87A8','--border':'#DBEAFE' },
+    dark: { '--bg':'#0B1526','--card':'#132040','--text':'#DBEAFE','--muted':'#7BA0C4','--border':'#1E3050' }
+  }
+};
+
+function applyTheme(themeId) {
+  const theme = THEMES[themeId];
+  if (!theme) return;
+  const root = document.documentElement;
+  const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const vars = { ...theme.vars, ...(isDark || themeId === 'dark' ? theme.dark : {}) };
+  Object.entries(vars).forEach(([k, v]) => root.style.setProperty(k, v));
+  // Update shadow colors
+  const rgb = hexToRgb(theme.vars['--primary']);
+  root.style.setProperty('--shadow', `0 4px 20px rgba(${rgb},0.08)`);
+  root.style.setProperty('--shadow-lg', `0 8px 40px rgba(${rgb},0.12)`);
+  localStorage.setItem('familyMeals_theme', themeId);
+  renderThemeOptions();
+}
+
+function hexToRgb(hex) {
+  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+  return `${r},${g},${b}`;
+}
+
+function toggleThemePicker() {
+  document.getElementById('theme-picker').classList.toggle('open');
+}
+
+function renderThemeOptions() {
+  const current = localStorage.getItem('familyMeals_theme') || 'green';
+  document.getElementById('theme-options').innerHTML = Object.entries(THEMES).map(([id, t]) => {
+    return `<div class="theme-option ${id===current?'active':''}" onclick="applyTheme('${id}')" style="${id===current?'border-color:'+t.vars['--primary']+';background:'+t.vars['--bg']:''}">
+      <div class="theme-swatch">
+        ${t.colors.map(c => `<span style="background:${c}"></span>`).join('')}
+      </div>
+      <div class="theme-option-info">
+        <div class="theme-option-name">${t.icon} ${t.name}</div>
+        <div class="theme-option-desc">${t.desc}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// Apply saved theme on load, or random on first visit
+(function() {
+  const saved = localStorage.getItem('familyMeals_theme');
+  if (saved && THEMES[saved]) {
+    applyTheme(saved);
+  } else {
+    const keys = Object.keys(THEMES);
+    applyTheme(keys[Math.floor(Math.random() * keys.length)]);
+  }
+})();
+
 // ═══════════════════════════════════════
 // CONFIG
 // ═══════════════════════════════════════
@@ -1003,13 +1140,10 @@ function saveState() {
 // ═══════════════════════════════════════
 function getWeekDates() {
   const today = new Date();
-  const day = today.getDay();
-  const mon = new Date(today);
-  mon.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
   const dates = [];
   for (let i = 0; i < 7; i++) {
-    const d = new Date(mon);
-    d.setDate(mon.getDate() + i);
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
     dates.push(d);
   }
   return dates;
@@ -1162,28 +1296,35 @@ function dishImage(dish) {
   }
 
   // TheMealDB pools for everything else
-  if (name.match(/phở|pho/)) pool = 'pho';
-  else if (name.match(/bún|miến|mì quảng|cao lầu|hủ tiếu|bánh canh|bánh đa|bún riêu|bún cá|bún mắm|bún quậy/)) pool = 'noodle_soup';
-  else if (name.match(/mì |ramen|udon|soba|pad thai|khao soi|lo mein|japchae|jajang/)) pool = 'noodle_stir';
+  if (name.match(/phở|pho/) && !name.match(/taco|naco/)) pool = 'pho';
+  else if (name.match(/gyudon|donburi|bibimbap/) || (name.match(/cơm|rice|xôi/) && !name.match(/noodle/))) pool = 'rice';
+  else if (name.match(/ramen|udon|soba|khao soi/) && !name.match(/xào|stir|fried/)) pool = 'noodle_soup';
+  else if (name.match(/japchae|pad thai|lo mein|jajang|mì xào|mì đảm|dan dan/)) pool = 'noodle_stir';
+  else if (name.match(/bún|mì quảng|cao lầu|hủ tiếu|bánh canh|bánh đa|bún riêu|bún cá|bún mắm|bún quậy/)) pool = 'noodle_soup';
+  else if (name.match(/miến/) && !name.match(/xào|japchae/)) pool = 'noodle_soup';
+  else if (name.match(/mì /) && !name.match(/mì quảng/) && name.match(/xào|stir|fried|tương đen/)) pool = 'noodle_stir';
   else if (name.match(/noodle|vermicelli/) && name.match(/soup|canh/)) pool = 'noodle_soup';
   else if (name.match(/noodle|vermicelli/)) pool = 'noodle_stir';
   else if (name.match(/sushi|sashimi|chirashi/)) pool = 'sushi';
-  else if (name.match(/taco|burrito|quesadilla|nachos|birria|campechano/)) pool = 'taco';
-  else if (name.match(/cà ri|curry|masala|tikka|tandoori/)) pool = 'curry';
-  else if (name.match(/tiramisu|fondant|chocolate|mousse|crème|tart|pudding|cheesecake|kem |ice cream|panna cotta|chè |flan|churros|dessert|hotteok|bánh flan/)) pool = 'dessert';
-  else if (name.match(/pancake|waffle|crêpe|bánh xèo|bánh cuốn|bánh căn|bánh bèo|bánh khọt|bánh cống|okonomiyaki|dosa|quiche/)) pool = 'pancake';
-  else if (name.match(/canh|súp|soup|cháo|congee|porridge|chowder/)) pool = 'soup';
+  else if (name.match(/taco|burrito|quesadilla|nachos|birria|campechano|naco_/)) pool = 'taco';
+  else if (name.match(/cà ri|curry|masala|tikka|tandoori|naan/)) pool = 'curry';
+  else if (name.match(/tiramisu|fondant|chocolate|mousse|crème brûlée|tart |pudding|cheesecake|kem |ice cream|panna cotta|chè |flan|churros|dessert|hotteok|bánh flan|pain au chocolat/)) pool = 'dessert';
+  else if (name.match(/pancake|waffle|crêpe|bánh xèo|bánh cuốn|bánh căn|bánh bèo|bánh khọt|bánh cống|okonomiyaki|dosa|quiche|french toast|bánh rán/)) pool = 'pancake';
+  else if (name.match(/canh|súp|soup|cháo|congee|porridge|chowder|thắng cố|ratatouille/)) pool = 'soup';
   else if (name.match(/lẩu|hotpot|fondue/)) pool = 'soup';
-  else if (name.match(/salad|gỏi|bánh tráng trộn/)) pool = 'salad';
+  else if (name.match(/salad|gỏi đu đủ|som tam|bánh tráng trộn|elote|bắp nướng/)) pool = 'salad';
   else if (name.match(/steak|bò bít tết|wellington/)) pool = 'steak';
-  else if (name.match(/gyoza|há cảo|dimsum|dumpling|nem rán|chả giò|spring roll|gỏi cuốn/)) pool = 'dumpling';
+  else if (name.match(/gyoza|há cảo|dimsum|dumpling|nem rán|chả giò|spring roll|gỏi cuốn|nem chua rán/)) pool = 'dumpling';
   else if (name.match(/cơm|rice|xôi|omurice|donburi|gyudon|bibimbap|kimbap|onigiri|com tam/)) pool = 'rice';
-  else if (name.match(/tôm|shrimp|cá |fish|mực|squid|hải sản|seafood|salmon|cá hồi|nghêu|cua|sò|bạch tuộc|tempura/) || tags.includes('fresh_seafood') || tags.includes('raw_seafood')) pool = 'seafood';
-  else if (name.match(/gà |chicken|ga nuong|chiên|rán|fried|katsu|nugget|takoyaki|karaage/) || name.match(/korean fried/)) pool = 'chicken';
+  else if (name.match(/mac.*cheese/)) pool = 'pasta';
+  else if (name.match(/tôm|shrimp|cá |fish|mực|squid|hải sản|seafood|salmon|cá hồi|nghêu|cua|sò|bạch tuộc|tempura|chả mực|takoyaki/) || tags.includes('fresh_seafood') || tags.includes('raw_seafood')) pool = 'seafood';
+  else if (name.match(/gà |chicken|ga nuong|chiên gà|karaage|kung pao|gà chiên|katsu/) || name.match(/korean fried/)) pool = 'chicken';
   else if (name.match(/bò |beef|thịt bò|bulgogi|galbi|bo la lot/) && !name.match(/phở/)) pool = 'beef';
-  else if (name.match(/heo|pork|thịt |sườn|carnitas|chorizo|samgyeopsal|ba chỉ/) || tags.includes('pork')) pool = 'pork';
-  else if (name.match(/sandwich|bánh mì|bread|croissant|bánh tôm|bánh giò/)) pool = 'pancake';
-  else if (name.match(/nướng|grilled|roast/)) pool = 'beef';
+  else if (name.match(/sandwich|bánh mì|bread|croissant|bánh giò|club sandwich|grilled cheese|croque/)) pool = 'pancake';
+  else if (name.match(/heo|pork|thịt |sườn|carnitas|chorizo|samgyeopsal|ba chỉ|xá xíu|char siu/) || tags.includes('pork')) pool = 'pork';
+  else if (name.match(/trứng|egg|scrambled/)) pool = 'pancake';
+  else if (name.match(/gỏi/) && !name.match(/gỏi cuốn/)) pool = 'salad';
+  else if (name.match(/nướng|grilled|roast/) && !name.match(/bắp|corn/)) pool = 'beef';
 
   // Fallback by cuisine
   if (!pool) {
@@ -1335,9 +1476,11 @@ function renderWeekGrid() {
       if (state.activeMembers.grandparents && sl === 'dinner') extra = `<span class="portion-badge">+2 Ông Bà</span>`;
 
       return `<div class="meal-slot ${locked?'locked':''}" onclick="openMealSlot('${dk}','${sl}',${d.getTime()})">
+        <div class="slot-check">${locked?'✓':''}</div>
         <span class="slot-icon">${slotIcon}</span>
         <div class="slot-info">
-          <div class="slot-name">${slotName} / ${slotNameEn}</div>
+          <div class="slot-name">${slotName}</div>
+          <div class="slot-sub">${slotNameEn}</div>
           ${dish ? `<div class="slot-dish">${dish.nameVi}</div>` : ''}
         </div>
         ${dish ? `<img class="slot-thumb" src="${dishImage(dish)}" alt="" loading="lazy" onerror="this.style.display='none'">` : ''}
@@ -2218,6 +2361,7 @@ if (!state.selectedDate) {
 }
 
 renderMemberSelector();
+renderThemeOptions();
 renderWeekGrid();
 
 // Swipe modal to close
