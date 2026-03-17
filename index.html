@@ -261,21 +261,44 @@ body { padding-bottom: calc(var(--nav-height) + 16px); }
   display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
 /* Suggest Menu */
 .suggest-section { padding:0 0 16px; }
-.suggest-header { display:flex; justify-content:space-between; align-items:center; padding:12px 0; font-size:15px; }
-.suggest-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-@media(min-width:600px) { .suggest-grid { grid-template-columns:repeat(4,1fr); } }
-.suggest-card { background:var(--card); border-radius:14px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,.08); cursor:pointer; transition:transform .15s; }
-.suggest-card:active { transform:scale(.97); }
-.suggest-card-img { position:relative; height:100px; overflow:hidden; }
-.suggest-card-img img { width:100%; height:100%; object-fit:cover; }
-.suggest-score { position:absolute; top:6px; right:6px; padding:2px 8px; border-radius:12px; color:#fff; font-size:11px; font-weight:700; }
-.repeat-badge { position:absolute; bottom:6px; left:6px; background:rgba(0,0,0,.6); color:#fff; font-size:10px; padding:2px 6px; border-radius:8px; }
-.suggest-card-body { padding:8px 10px; }
-.suggest-card-name { font-family:var(--font-display); font-size:13px; font-weight:700; line-height:1.2; }
-.suggest-card-sub { font-size:10px; color:var(--muted); margin-top:2px; }
-.suggest-card-meta { display:flex; justify-content:space-between; font-size:10px; color:var(--muted); margin-top:4px; }
-.suggest-hint { text-align:center; font-size:12px; color:var(--muted); margin-top:10px; }
+.suggest-header { display:flex; justify-content:space-between; align-items:center; padding:8px 0; font-size:14px; }
+.suggest-hint { text-align:center; font-size:11px; color:var(--muted); margin-top:8px; }
 .suggest-btn { background:linear-gradient(135deg,var(--primary),var(--secondary))!important; }
+/* Combo meal cards */
+.combo-scroll { display:flex; gap:12px; overflow-x:auto; padding:4px 0 8px; scroll-snap-type:x mandatory; }
+.combo-scroll::-webkit-scrollbar { display:none; }
+.combo-card {
+  min-width:280px; flex-shrink:0; background:var(--card); border-radius:14px;
+  box-shadow:0 3px 12px rgba(0,0,0,.1); scroll-snap-align:start; overflow:hidden;
+  border:2px solid transparent; cursor:pointer; transition:all .2s;
+}
+.combo-card:hover { border-color:var(--primary); }
+.combo-card-header {
+  background:linear-gradient(135deg,var(--primary),var(--secondary));
+  color:#fff; padding:10px 14px; display:flex; justify-content:space-between; align-items:center;
+}
+.combo-card-title { font-family:var(--font-display); font-size:15px; font-weight:700; }
+.combo-card-badge { background:rgba(255,255,255,.25); padding:3px 10px; border-radius:12px; font-size:11px; font-weight:700; }
+.combo-dishes { padding:8px; }
+.combo-dish-row {
+  display:flex; align-items:center; gap:8px; padding:6px; border-radius:10px;
+  margin-bottom:4px; background:var(--bg); transition:background .2s;
+}
+.combo-dish-row:last-child { margin-bottom:0; }
+.combo-dish-img { width:50px; height:50px; border-radius:8px; object-fit:cover; flex-shrink:0; }
+.combo-dish-info { flex:1; min-width:0; }
+.combo-dish-name { font-size:12px; font-weight:700; line-height:1.2; }
+.combo-dish-sub { font-size:10px; color:var(--muted); }
+.combo-dish-role { font-size:9px; color:var(--primary); font-weight:600; text-transform:uppercase; }
+.combo-footer {
+  padding:8px 14px; border-top:1px solid var(--border);
+  display:flex; justify-content:space-between; align-items:center;
+}
+.combo-compat { font-size:12px; font-weight:700; }
+.combo-select-btn {
+  padding:6px 16px; border:none; border-radius:8px; background:var(--primary);
+  color:#fff; font-size:12px; font-weight:700; cursor:pointer;
+}
 .btn-sm { font-size:12px; padding:4px 12px; }
 .group-header {
   display:flex; align-items:center; gap:12px; padding:8px 0 12px; cursor:pointer;
@@ -1410,14 +1433,25 @@ function renderVoting(dk, meal, members) {
   const locked = state.lockedMeals[key];
 
   if (locked) {
-    const dish = DATA.dishes.find(d => d.id === locked);
+    const comboIds = state.combos?.[key] || [locked];
+    const comboDishes = comboIds.map(id => DATA.dishes.find(d => d.id === id)).filter(Boolean);
+    const comboHtml = comboDishes.map(d => {
+      const role = getDishRole(d);
+      const roleLabel = {staple:'Cơm',main:'Món mặn',soup:'Canh',veg:'Rau',noodle:'Món chính',side:'Món phụ',dessert:'Tráng miệng'}[role]||'Món';
+      return `<div class="combo-dish-row">
+        <img class="combo-dish-img" src="${dishImage(d)}" alt="${d.nameVi}" loading="lazy" onerror="this.style.display='none'">
+        <div class="combo-dish-info">
+          <div class="combo-dish-role">${roleLabel}</div>
+          <div class="combo-dish-name">${d.nameVi}</div>
+        </div>
+      </div>`;
+    }).join('');
     document.getElementById('voting-section').innerHTML = `
-      <div class="voting-panel" style="text-align:center">
-        <div style="font-size:32px;margin-bottom:8px">🎉</div>
-        <div class="voting-title">Đã chọn: ${dish?.nameVi || locked}</div>
-        <p style="color:var(--muted);font-size:13px">${dish?.nameEn || ''}</p>
-        ${state.grandparents[dk] && meal === 'dinner' ? '<span class="portion-badge" style="margin-top:8px;display:inline-block">+2 phần cho Ông Bà</span>' : ''}
-        <button class="btn-outline" style="margin-top:12px" onclick="unlockMeal('${key}')">Chọn lại</button>
+      <div class="voting-panel">
+        <div style="text-align:center;font-size:24px;margin-bottom:4px">🎉</div>
+        <div class="voting-title" style="text-align:center">Đã chọn combo bữa ${meal==='breakfast'?'sáng':meal==='lunch'?'trưa':'tối'}</div>
+        <div style="margin:8px 0">${comboHtml}</div>
+        <button class="btn-outline" style="width:100%;margin-top:8px" onclick="unlockMeal('${key}')">Chọn lại</button>
       </div>`;
     document.getElementById('suggestions-title').style.display = 'none';
     document.getElementById('food-suggestions').innerHTML = '';
@@ -1510,6 +1544,7 @@ function lockMeal(key, dishId) {
 function unlockMeal(key) {
   delete state.lockedMeals[key];
   delete state.votes[key];
+  if (state.combos) delete state.combos[key];
   saveState();
   renderTodayView();
   renderWeekGrid();
@@ -1518,52 +1553,119 @@ function unlockMeal(key) {
 // ═══════════════════════════════════════
 // SUGGEST MENU (personalized)
 // ═══════════════════════════════════════
+// Meal role classification for combo building
+function getDishRole(dish) {
+  const name = (dish.nameVi + ' ' + dish.nameEn + ' ' + dish.id).toLowerCase();
+  const tags = dish.tags || [];
+  if (name.match(/cơm|rice|xôi|omurice|donburi|gyudon|bibimbap|kimbap|com tam|com rang/)) return 'staple';
+  if (name.match(/canh|súp|soup|cháo|congee|porridge|miso/)) return 'soup';
+  if (name.match(/lẩu|hotpot|fondue/)) return 'soup';
+  if (name.match(/salad|gỏi|rau|vegetable|chay|tofu|đậu hũ|đậu phụ|kimchi/) || tags.includes('vegetables')) return 'veg';
+  if (name.match(/phở|bún|mì |miến|noodle|pasta|ramen|udon|soba|pad thai|hủ tiếu|bánh canh|cao lầu|mì quảng/)) return 'noodle';
+  if (name.match(/pizza|burger|sandwich|bánh mì|taco|burrito|quesadilla/)) return 'main';
+  if (name.match(/tiramisu|fondant|chocolate|mousse|kem |dessert|flan|churros|chè /)) return 'dessert';
+  if (name.match(/nem|spring roll|gỏi cuốn|gyoza|dimsum|takoyaki|bánh|tempura/)) return 'side';
+  return 'main'; // protein/meat/seafood dishes default to main
+}
+
+function generateCombos(meal, members) {
+  const cuisine = state.cuisineFilter || 'all';
+  const eligible = DATA.dishes.filter(d => d.meal.includes(meal) && (cuisine === 'all' || d.cuisine === cuisine));
+
+  // Score and classify all dishes
+  const scored = eligible.map(d => {
+    const compat = calculateCompatibility(d, members);
+    const repeat = getRepeatInfo(d.id);
+    let penalty = repeat ? (repeat.isRecent ? 25 : 8) : 0;
+    return { dish: d, score: compat.avgPct - penalty, pct: compat.avgPct, role: getDishRole(d) };
+  });
+
+  // Group by role
+  const byRole = {};
+  scored.forEach(s => {
+    if (!byRole[s.role]) byRole[s.role] = [];
+    byRole[s.role].push(s);
+  });
+  Object.values(byRole).forEach(arr => arr.sort((a, b) => b.score - a.score));
+
+  // Build 3 combos with different styles
+  const combos = [];
+  const usedIds = new Set();
+
+  function pickBest(role, fallback) {
+    const pool = byRole[role] || byRole[fallback] || [];
+    const pick = pool.find(s => !usedIds.has(s.dish.id));
+    if (pick) usedIds.add(pick.dish.id);
+    return pick || null;
+  }
+
+  // Combo structures based on meal type
+  const structures = meal === 'breakfast'
+    ? [
+        [{ role:'noodle', label:'Món chính' }, { role:'side', label:'Món phụ' }],
+        [{ role:'staple', label:'Cơm/Xôi' }, { role:'main', label:'Món mặn' }],
+        [{ role:'noodle', label:'Món chính' }, { role:'dessert', label:'Tráng miệng' }],
+      ]
+    : [
+        [{ role:'staple', label:'Cơm' }, { role:'main', label:'Món mặn' }, { role:'soup', label:'Canh' }, { role:'veg', label:'Rau' }],
+        [{ role:'noodle', label:'Món chính' }, { role:'main', label:'Món mặn' }, { role:'side', label:'Món phụ' }],
+        [{ role:'staple', label:'Cơm' }, { role:'main', label:'Món mặn' }, { role:'main', label:'Món mặn 2' }, { role:'soup', label:'Canh' }],
+      ];
+
+  structures.forEach((struct, i) => {
+    const dishes = [];
+    struct.forEach(({ role, label }) => {
+      const pick = pickBest(role, 'main');
+      if (pick) dishes.push({ ...pick, label });
+    });
+    if (dishes.length >= 2) {
+      const avgPct = Math.round(dishes.reduce((s, d) => s + d.pct, 0) / dishes.length);
+      const totalPrice = dishes.reduce((s, d) => s + d.dish.price, 0);
+      combos.push({ dishes, avgPct, totalPrice, index: i + 1 });
+    }
+  });
+
+  return combos;
+}
+
 function suggestMenu(dk, meal) {
   const mid = state.activeMember;
   if (!mid) return;
   const member = DATA.members[mid];
-  const taste = DATA.tastes[mid];
-
-  // Filter dishes for this meal time
-  const eligible = DATA.dishes.filter(d => d.meal.includes(meal));
-
-  // Score each dish for this person
-  const scored = eligible.map(d => {
-    const compat = calculateCompatibility(d, [mid]);
-    const pct = compat.members[mid]?.pct || 50;
-    // Penalize recently eaten dishes
-    const repeat = getRepeatInfo(d.id);
-    let penalty = 0;
-    if (repeat) {
-      if (repeat.isRecent) penalty = 30;
-      else penalty = 10;
-    }
-    return { dish: d, score: pct - penalty, pct, repeat };
-  });
-
-  // Sort by score descending, pick top 8
-  scored.sort((a, b) => b.score - a.score);
-  const top = scored.slice(0, 8);
-
+  const members = Object.keys(DATA.members).filter(m => state.activeMembers[m]);
   const key = `${dk}_${meal}`;
-  const cardsHtml = top.map(({ dish, pct, repeat }) => {
-    const img = dishImage(dish);
-    const repeatBadge = repeat ? `<span class="repeat-badge">🔄 ${repeat.daysAgo}d ago</span>` : '';
-    const pctColor = pct >= 70 ? 'var(--success)' : pct >= 45 ? 'var(--amber)' : 'var(--danger)';
-    return `
-      <div class="suggest-card" onclick="lockMeal('${key}','${dish.id}')">
-        <div class="suggest-card-img">
-          <img src="${img}" alt="${dish.nameVi}" loading="lazy" onerror="this.src='https://foodish-api.com/images/rice/rice1.jpg'">
-          <span class="suggest-score" style="background:${pctColor}">${pct}%</span>
-          ${repeatBadge}
-        </div>
-        <div class="suggest-card-body">
-          <div class="suggest-card-name">${dish.nameVi}</div>
-          <div class="suggest-card-sub">${dish.nameEn}</div>
-          <div class="suggest-card-meta">
-            <span>${dish.time}</span>
-            <span>${'💰'.repeat(dish.price)}</span>
+  const mealLabel = meal==='breakfast'?'sáng':meal==='lunch'?'trưa':'tối';
+  const portionCount = getPortionCount();
+
+  const combos = generateCombos(meal, members);
+
+  const combosHtml = combos.map((combo, ci) => {
+    const dishRows = combo.dishes.map(({ dish, pct, label }) => {
+      const img = dishImage(dish);
+      return `
+        <div class="combo-dish-row">
+          <img class="combo-dish-img" src="${img}" alt="${dish.nameVi}" loading="lazy" onerror="this.style.display='none'">
+          <div class="combo-dish-info">
+            <div class="combo-dish-role">${label}</div>
+            <div class="combo-dish-name">${dish.nameVi}</div>
+            <div class="combo-dish-sub">${dish.nameEn}</div>
           </div>
+        </div>`;
+    }).join('');
+
+    const pctColor = combo.avgPct >= 70 ? 'var(--success)' : combo.avgPct >= 45 ? 'var(--amber)' : 'var(--danger)';
+    const comboIds = combo.dishes.map(d => d.dish.id).join(',');
+
+    return `
+      <div class="combo-card">
+        <div class="combo-card-header">
+          <div class="combo-card-title">Combo ${combo.index}</div>
+          <div class="combo-card-badge">${portionCount} người</div>
+        </div>
+        <div class="combo-dishes">${dishRows}</div>
+        <div class="combo-footer">
+          <span class="combo-compat" style="color:${pctColor}">♥ ${combo.avgPct}% phù hợp</span>
+          <button class="combo-select-btn" onclick="selectCombo('${key}','${comboIds}')">Chọn combo này</button>
         </div>
       </div>`;
   }).join('');
@@ -1571,12 +1673,31 @@ function suggestMenu(dk, meal) {
   document.getElementById('suggest-results').innerHTML = `
     <div class="suggest-section">
       <div class="suggest-header">
-        <span>✨ Top gợi ý cho <strong>${member.icon} ${member.name}</strong></span>
+        <span>🍽️ Combo bữa ${mealLabel} cho <strong>${portionCount} người</strong></span>
         <button class="btn-outline btn-sm" onclick="document.getElementById('suggest-results').innerHTML=''">✕ Đóng</button>
       </div>
-      <div class="suggest-grid">${cardsHtml}</div>
-      <p class="suggest-hint">Chạm vào món để chốt cho bữa ${meal==='breakfast'?'sáng':meal==='lunch'?'trưa':'tối'}</p>
+      <div class="combo-scroll">${combosHtml}</div>
+      <p class="suggest-hint">Vuốt ngang để xem thêm combo • Chạm "Chọn combo" để chốt</p>
     </div>`;
+}
+
+function selectCombo(key, comboIds) {
+  const ids = comboIds.split(',');
+  // Lock the first main dish as the meal choice
+  state.lockedMeals[key] = ids[0];
+  // Store full combo in state
+  if (!state.combos) state.combos = {};
+  state.combos[key] = ids;
+  const [dk, meal] = key.split('_');
+  ids.forEach(dishId => {
+    state.mealHistory.push({ date: dk, meal, dishId, timestamp: Date.now() });
+  });
+  const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+  state.mealHistory = state.mealHistory.filter(h => Date.now() - h.timestamp < thirtyDays);
+  saveState();
+  if (typeof confetti === 'function') confetti({ particleCount:100, spread:70, origin:{y:0.6} });
+  renderTodayView();
+  renderWeekGrid();
 }
 
 // ═══════════════════════════════════════
